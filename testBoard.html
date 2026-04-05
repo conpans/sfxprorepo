@@ -1,0 +1,2169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CVD Central — Shift Execution Map</title>
+<style>
+/* ================================================================
+   TOKENS
+================================================================ */
+:root {
+  --lp-w:    278px;
+  --rp-w:    330px;
+  --tb-h:     48px;
+  --strip-h:  58px;
+
+  --white:      #ffffff;
+  --bg:         #F2F4F7;
+  --bg-subtle:  #F8F9FB;
+  --panel-bg:   #ffffff;
+  --border:     #E2E8F0;
+  --border-sub: #EDF1F7;
+  --map-bg:     #EDEEF1;
+
+  --txt-primary:   #1C2B4A;
+  --txt-secondary: #5A6882;
+  --txt-muted:     #8A9BB0;
+
+  --accent:    #0078D4;
+  --accent-lt: rgba(0,120,212,0.08);
+
+  --v-a: #1A4E96;
+  --v-b: #1F8A4C;
+  --v-c: #921428;
+
+  /* PM tier — new language: Critical / Priority / Upcoming / Clear */
+  --t-crit-bg:  #FDE8E0;  --t-crit-fg:  #B83000;  --t-crit-bdr:  #F4B8A0;
+  --t-pri-bg:   #FFF4CE;  --t-pri-fg:   #7D5200;  --t-pri-bdr:   #F0D078;
+  --t-up-bg:    #EBF0FB;  --t-up-fg:    #1C4080;  --t-up-bdr:    #C0D0F0;
+
+  /* Typography — 16px floor (raised from 14px for SPFx web part readability) */
+  --fs-base:    16px;
+  --fs-sm:      15px;
+  --fs-xs:      14px;
+  --fs-label:   13px;
+  --fs-heading: 17px;
+  --fs-large:   20px;
+  --fs-xlarge:  26px;
+
+  --r-sm: 4px;  --r: 6px;  --r-lg: 9px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  --shadow-l:  1px 0 8px rgba(0,0,0,0.05), 4px 0 20px rgba(0,0,0,0.03);
+  --shadow-r: -1px 0 8px rgba(0,0,0,0.05),-4px 0 20px rgba(0,0,0,0.03);
+
+  --page-bg:  #EDEBE9;
+  --page-pad: 16px;
+}
+
+/* ================================================================
+   RESET
+================================================================ */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+body{
+  background:var(--page-bg);
+  font-family:var(--font);
+  font-size:var(--fs-base);
+  color:var(--txt-primary);
+  padding:var(--page-pad);
+  display:flex;
+  align-items:stretch;
+}
+button,input{font-family:var(--font)}
+a{color:var(--accent)}
+
+/* ================================================================
+   SHELL
+================================================================ */
+.webpart-host{width:100%;height:100%;display:flex;align-items:stretch}
+
+.app-shell{
+  flex:1;
+  position:relative;
+  border-radius:16px;
+  overflow:hidden;
+  background:var(--white);
+  border:1px solid rgba(0,0,0,0.09);
+  box-shadow:0 1px 2px rgba(0,0,0,0.04),0 4px 10px rgba(0,0,0,0.06),0 12px 28px rgba(0,0,0,0.06);
+  container-type:size;
+  container-name:app;
+}
+
+/* ================================================================
+   APP GRID: topbar / strip / body
+================================================================ */
+#app-grid{
+  display:grid;
+  grid-template-rows:var(--tb-h) var(--strip-h) 1fr;
+  width:100%;height:100%;
+}
+
+/* ================================================================
+   TOP BAR
+================================================================ */
+#top-bar{
+  display:flex;align-items:center;gap:10px;
+  padding:0 14px;
+  background:var(--white);
+  border-bottom:1px solid var(--border);
+  z-index:20;
+}
+#brand{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;color:var(--txt-primary);letter-spacing:-0.01em}
+#brand-icon{width:24px;height:24px;background:var(--accent);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#tb-sep{width:1px;height:18px;background:var(--border);margin:0 2px}
+#tb-crumb{font-size:var(--fs-sm);color:var(--txt-secondary);display:flex;align-items:center;gap:5px}
+#tb-crumb .here{color:var(--txt-primary);font-weight:500}
+#tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+#btn-reset{font-size:var(--fs-xs);padding:4px 10px;border:1px solid var(--border);background:var(--white);color:var(--txt-secondary);border-radius:var(--r-sm);cursor:pointer}
+#btn-reset:hover{background:var(--bg)}
+#nav-drawer-btn{display:none;align-items:center;gap:5px;font-size:var(--fs-xs);padding:4px 10px;border:1px solid var(--border);background:var(--white);color:var(--txt-secondary);border-radius:var(--r-sm);cursor:pointer}
+
+/* ================================================================
+   PM SUMMARY STRIP
+   Source: PM_FEED only. 4 tier counts + total.
+================================================================ */
+#pm-strip{
+  display:flex;align-items:stretch;
+  border-bottom:1px solid var(--border);
+  background:var(--bg-subtle);
+}
+.pm-tile{
+  flex:1;display:flex;align-items:center;gap:10px;
+  padding:0 14px;
+  border-right:1px solid var(--border);
+  cursor:pointer;min-width:0;
+  transition:background 0.1s;
+}
+.pm-tile:last-child{border-right:none}
+.pm-tile:hover{background:rgba(0,0,0,0.025)}
+.pm-tile.active-filter{background:rgba(0,120,212,0.05)}
+
+.pt-count{font-size:22px;font-weight:700;letter-spacing:-0.03em;line-height:1;flex-shrink:0}
+.pt-info{min-width:0}
+.pt-label{font-size:var(--fs-label);font-weight:700;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt-desc{font-size:var(--fs-xs);color:var(--txt-muted);white-space:nowrap}
+
+.tile-crit{border-left:3px solid var(--t-crit-fg)}
+.tile-crit .pt-count,.tile-crit .pt-label{color:var(--t-crit-fg)}
+.tile-pri{border-left:3px solid var(--t-pri-fg)}
+.tile-pri .pt-count,.tile-pri .pt-label{color:var(--t-pri-fg)}
+.tile-up{border-left:3px solid var(--t-up-fg)}
+.tile-up .pt-count,.tile-up .pt-label{color:var(--t-up-fg)}
+.tile-total .pt-count{color:var(--txt-secondary)}
+.tile-total .pt-label{color:var(--txt-muted)}
+
+/* ================================================================
+   BODY GRID
+================================================================ */
+#body-grid{
+  display:grid;
+  grid-template-columns:var(--lp-w) 1fr var(--rp-w);
+  min-height:0;overflow:hidden;
+}
+
+/* ================================================================
+   LEFT PANEL — urgency-sorted, accordion hierarchy
+================================================================ */
+#left-panel{
+  display:flex;flex-direction:column;overflow:hidden;
+  background:var(--panel-bg);
+  border-right:1px solid var(--border);
+  box-shadow:var(--shadow-l);
+  z-index:10;
+}
+
+#lp-controls{
+  flex-shrink:0;
+  padding:11px 13px 10px;
+  border-bottom:1px solid var(--border-sub);
+  background:var(--panel-bg);
+}
+#lp-eyebrow{
+  font-size:var(--fs-label);font-weight:700;letter-spacing:0.08em;
+  text-transform:uppercase;color:var(--txt-muted);margin-bottom:8px;
+}
+
+#search-wrap{position:relative;margin-bottom:8px}
+#search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--txt-muted);pointer-events:none}
+#search-input{
+  width:100%;padding:7px 10px 7px 30px;
+  border:1px solid var(--border);border-radius:var(--r-sm);
+  font-size:var(--fs-base);background:var(--bg);color:var(--txt-primary);outline:none;
+  transition:border-color 0.12s,box-shadow 0.12s;
+}
+#search-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-lt);background:var(--white)}
+#search-input::placeholder{color:var(--txt-muted)}
+
+/* Tier filter chips — replaces old building + PM chips */
+#tier-filter{display:flex;gap:5px;flex-wrap:wrap}
+.tier-chip{
+  font-size:var(--fs-xs);font-weight:600;padding:3px 9px;
+  border-radius:20px;cursor:pointer;transition:all 0.1s;
+  border:1px solid transparent;
+}
+.tc-all{background:var(--bg);color:var(--txt-muted);border-color:var(--border)}
+.tc-all.active{background:var(--accent);color:white;border-color:var(--accent)}
+.tc-crit{background:var(--t-crit-bg);color:var(--t-crit-fg);border-color:var(--t-crit-bdr)}
+.tc-pri{background:var(--t-pri-bg);color:var(--t-pri-fg);border-color:var(--t-pri-bdr)}
+.tc-up{background:var(--t-up-bg);color:var(--t-up-fg);border-color:var(--t-up-bdr)}
+.tier-chip.active{filter:brightness(0.90) saturate(1.2);box-shadow:0 0 0 2px rgba(0,0,0,0.14)}
+
+#lp-list-region{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;
+  background:var(--bg-subtle);min-height:0;
+}
+
+#lp-list-label{
+  flex-shrink:0;
+  padding:7px 13px 4px;
+  font-size:var(--fs-label);font-weight:700;letter-spacing:0.07em;text-transform:uppercase;
+  color:var(--txt-muted);background:var(--bg-subtle);
+}
+
+#tool-list{flex:1;overflow-y:auto;padding-bottom:20px;min-height:0}
+#tool-list::-webkit-scrollbar{width:3px}
+#tool-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ── Tool row (collapsed) ─────────────────────────────────── */
+.tool-row{
+  display:flex;align-items:center;padding:9px 13px;gap:9px;
+  cursor:pointer;border-bottom:1px solid var(--border-sub);
+  transition:background 0.07s;
+}
+.tool-row:hover{background:rgba(255,255,255,0.8)}
+.tool-row.sel{background:var(--accent-lt)}
+.tool-row:last-child{border-bottom:none}
+
+.t-vendor-bar{width:4px;align-self:stretch;border-radius:2px;flex-shrink:0}
+.t-vendor-bar.a{background:var(--v-a)}
+.t-vendor-bar.b{background:var(--v-b)}
+.t-vendor-bar.c{background:var(--v-c)}
+
+.t-info{flex:1;min-width:0}
+.t-id{font-size:var(--fs-base);font-weight:600;color:var(--txt-primary);line-height:1.3}
+.t-id.sel-id{color:var(--accent)}
+.t-loc{font-size:var(--fs-xs);color:var(--txt-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.t-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+
+/* expand chevron */
+.t-chevron{
+  font-size:13px;color:var(--txt-muted);
+  transition:transform 0.18s;line-height:1;
+  flex-shrink:0;
+}
+.tool-row.expanded .t-chevron{transform:rotate(90deg)}
+
+/* PM badge on tool row — primary urgency signal */
+.t-badge{
+  font-size:var(--fs-xs);font-weight:700;padding:3px 8px;
+  border-radius:20px;white-space:nowrap;line-height:1.3;
+}
+.t-badge.critical{background:var(--t-crit-bg);color:var(--t-crit-fg)}
+.t-badge.priority{background:var(--t-pri-bg);color:var(--t-pri-fg)}
+.t-badge.upcoming{background:var(--t-up-bg);color:var(--t-up-fg)}
+.t-badge.clear{background:var(--bg);color:var(--txt-muted);border:1px solid var(--border)}
+
+/* ── Accordion: frames and chambers ──────────────────────── */
+.tool-accordion{
+  display:none;
+  background:rgba(242,244,247,0.6);
+  border-bottom:1px solid var(--border-sub);
+}
+.tool-accordion.open{display:block}
+
+.frame-row{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 13px 7px 22px;
+  border-bottom:1px solid var(--border-sub);
+  cursor:pointer;transition:background 0.07s;
+}
+.frame-row:hover{background:rgba(255,255,255,0.7)}
+.frame-row.sel{background:var(--accent-lt)}
+.frame-row:last-child{border-bottom:none}
+
+.frame-icon{
+  width:14px;height:14px;flex-shrink:0;
+  border:1.5px solid var(--txt-muted);border-radius:2px;
+}
+
+.frame-label{
+  font-size:var(--fs-sm);font-weight:600;color:var(--txt-secondary);flex:1;min-width:0;
+}
+.frame-row.sel .frame-label{color:var(--accent)}
+
+/* rolled-up urgency dot on frame — NOT a PM badge, just an indicator */
+.frame-dot{
+  width:7px;height:7px;border-radius:50%;flex-shrink:0;
+}
+.frame-dot.critical{background:var(--t-crit-fg)}
+.frame-dot.priority{background:var(--t-pri-fg)}
+.frame-dot.upcoming{background:var(--t-up-fg)}
+.frame-dot.clear{background:var(--border)}
+
+.chamber-row{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 13px 6px 36px;
+  border-bottom:1px solid var(--border-sub);
+  cursor:pointer;transition:background 0.07s;
+}
+.chamber-row:hover{background:rgba(255,255,255,0.7)}
+.chamber-row.sel{background:var(--accent-lt)}
+.chamber-row:last-child{border-bottom:none}
+
+.ch-dot{
+  width:8px;height:8px;border-radius:50%;
+  flex-shrink:0;border:1.5px solid var(--txt-muted);
+}
+
+.ch-label{
+  font-size:var(--fs-sm);color:var(--txt-secondary);flex:1;min-width:0;
+}
+.chamber-row.sel .ch-label{color:var(--accent);font-weight:600}
+
+/* chamber PM badge — only shown at the level where PM exists */
+.ch-pm-badge{
+  font-size:var(--fs-xs);font-weight:700;padding:2px 7px;
+  border-radius:20px;white-space:nowrap;line-height:1.3;
+  flex-shrink:0;
+}
+.ch-pm-badge.critical{background:var(--t-crit-bg);color:var(--t-crit-fg)}
+.ch-pm-badge.priority{background:var(--t-pri-bg);color:var(--t-pri-fg)}
+.ch-pm-badge.upcoming{background:var(--t-up-bg);color:var(--t-up-fg)}
+
+/* ── Footer legend ─────────────────────────────────────────── */
+#lp-footer{
+  flex-shrink:0;padding:7px 13px;border-top:1px solid var(--border-sub);
+  background:var(--panel-bg);display:flex;align-items:center;gap:12px;
+}
+.lp-li{display:flex;align-items:center;gap:5px;font-size:var(--fs-xs);color:var(--txt-muted)}
+.lp-vbar{width:4px;height:12px;border-radius:2px;flex-shrink:0}
+.lp-vbar.a{background:var(--v-a)}.lp-vbar.b{background:var(--v-b)}.lp-vbar.c{background:var(--v-c)}
+
+/* ================================================================
+   MAP
+================================================================ */
+#map-container{position:relative;overflow:hidden;background:var(--map-bg);min-width:0}
+#cv{display:block}
+
+/* ================================================================
+   RIGHT PANEL — 4 states
+================================================================ */
+#right-panel{
+  display:flex;flex-direction:column;overflow:hidden;
+  background:var(--panel-bg);
+  border-left:1px solid var(--border);
+  box-shadow:var(--shadow-r);
+  z-index:10;
+}
+
+/* shared scroll container */
+.rp-state{display:none;flex-direction:column;flex:1;overflow:hidden}
+.rp-state.active{display:flex}
+
+/* right panel scrollable area */
+.rp-scroll{flex:1;overflow-y:auto;min-height:0;padding-bottom:20px}
+.rp-scroll::-webkit-scrollbar{width:3px}
+.rp-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ── State A: no selection ── */
+#rp-idle-hd{
+  flex-shrink:0;padding:14px 15px 11px;
+  border-bottom:1px solid var(--border-sub);
+}
+#rp-idle-title{font-size:var(--fs-heading);font-weight:700;color:var(--txt-primary);margin-bottom:2px}
+#rp-idle-sub{font-size:var(--fs-sm);color:var(--txt-muted)}
+
+/* PM queue entries */
+.pm-tier-hd{
+  display:flex;align-items:center;gap:8px;
+  padding:11px 15px 5px;
+}
+.pm-tier-bar{width:3px;height:16px;border-radius:2px;flex-shrink:0}
+.pm-tier-label{font-size:var(--fs-label);font-weight:700;letter-spacing:0.08em;text-transform:uppercase}
+.tier-critical .pm-tier-bar{background:var(--t-crit-fg)}.tier-critical .pm-tier-label{color:var(--t-crit-fg)}
+.tier-priority .pm-tier-bar{background:var(--t-pri-fg)}.tier-priority  .pm-tier-label{color:var(--t-pri-fg)}
+.tier-upcoming .pm-tier-bar{background:var(--t-up-fg)}.tier-upcoming  .pm-tier-label{color:var(--t-up-fg)}
+
+.pm-entry{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:9px 15px;border-bottom:1px solid var(--border-sub);
+  cursor:pointer;transition:background 0.07s;
+}
+.pm-entry:hover{background:var(--bg-subtle)}
+.pm-entry:last-child{border-bottom:none}
+
+.pm-entry-day{flex-shrink:0;min-width:44px;text-align:center}
+.pm-day-num{font-size:var(--fs-large);font-weight:700;letter-spacing:-0.03em;line-height:1}
+.pm-day-lbl{font-size:var(--fs-xs);color:var(--txt-muted);line-height:1.3}
+.pm-entry.critical .pm-day-num{color:var(--t-crit-fg)}
+.pm-entry.priority  .pm-day-num{color:var(--t-pri-fg)}
+.pm-entry.upcoming  .pm-day-num{color:var(--t-up-fg)}
+
+.pm-entry-body{flex:1;min-width:0}
+.pm-entry-id{font-size:var(--fs-base);font-weight:600;color:var(--txt-primary);margin-bottom:1px}
+.pm-entry-level{font-size:var(--fs-xs);color:var(--txt-muted);margin-bottom:2px}
+.pm-entry-type{font-size:var(--fs-sm);color:var(--txt-secondary)}
+.pm-entry-date{font-size:var(--fs-xs);color:var(--txt-muted);margin-top:2px}
+.pm-entry-chev{flex-shrink:0;color:var(--txt-muted);font-size:16px;align-self:center}
+
+/* ── States B/C/D shared header ── */
+#rp-sel-hd,#rp-sub-hd{
+  flex-shrink:0;padding:13px 15px 11px;
+  border-bottom:1px solid var(--border-sub);
+}
+
+.rp-back{
+  display:flex;align-items:center;gap:4px;
+  font-size:var(--fs-sm);color:var(--accent);cursor:pointer;
+  margin-bottom:8px;width:fit-content;
+}
+.rp-back:hover{text-decoration:underline}
+
+.rp-tool-id{font-size:var(--fs-large);font-weight:700;letter-spacing:-0.02em;color:var(--txt-primary);margin-bottom:2px}
+.rp-tool-meta{font-size:var(--fs-sm);color:var(--txt-secondary);margin-bottom:8px}
+
+/* breadcrumb for frame/chamber state */
+.rp-breadcrumb{
+  font-size:var(--fs-sm);color:var(--txt-muted);
+  display:flex;align-items:center;gap:5px;flex-wrap:wrap;
+  margin-bottom:8px;
+}
+.rp-breadcrumb .bc-sep{opacity:0.4}
+.rp-breadcrumb .bc-active{color:var(--txt-primary);font-weight:600}
+
+.vendor-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:var(--fs-xs);font-weight:600;padding:3px 9px;border-radius:20px;
+}
+.vb-a{background:rgba(26,78,150,0.09);color:var(--v-a)}
+.vb-b{background:rgba(31,138,76,0.09);color:var(--v-b)}
+.vb-c{background:rgba(146,20,40,0.09);color:var(--v-c)}
+
+/* ── Pane sections ── */
+.pane-sec{padding:13px 15px;border-bottom:1px solid var(--border-sub)}
+.pane-sec:last-child{border-bottom:none}
+.pane-sec-hd{
+  font-size:var(--fs-label);font-weight:700;letter-spacing:0.08em;
+  text-transform:uppercase;color:var(--txt-muted);margin-bottom:10px;
+}
+
+/* PM card */
+.pm-card{
+  border:1px solid var(--border);border-radius:var(--r);
+  padding:12px 14px;margin-bottom:8px;
+}
+.pm-card:last-child{margin-bottom:0}
+.pm-card.critical{border-left:3px solid var(--t-crit-fg);background:var(--t-crit-bg)}
+.pm-card.priority{border-left:3px solid var(--t-pri-fg);background:var(--t-pri-bg)}
+.pm-card.upcoming{border-left:3px solid var(--t-up-fg);background:var(--t-up-bg)}
+
+.pm-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:5px}
+.pm-card-type{font-size:var(--fs-base);font-weight:600;color:var(--txt-primary);line-height:1.3}
+.pm-card-level{font-size:var(--fs-xs);color:var(--txt-muted);margin-bottom:6px}
+.pm-card-urg{flex-shrink:0;font-size:var(--fs-xs);font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.pm-card.critical .pm-card-urg{background:rgba(184,48,0,0.14);color:var(--t-crit-fg)}
+.pm-card.priority  .pm-card-urg{background:rgba(196,127,0,0.14);color:var(--t-pri-fg)}
+.pm-card.upcoming  .pm-card-urg{background:rgba(28,64,128,0.12);color:var(--t-up-fg)}
+
+.pm-card-days{font-size:var(--fs-xlarge);font-weight:700;letter-spacing:-0.03em;line-height:1;margin-bottom:2px}
+.pm-card.critical .pm-card-days{color:var(--t-crit-fg)}
+.pm-card.priority  .pm-card-days{color:var(--t-pri-fg)}
+.pm-card.upcoming  .pm-card-days{color:var(--t-up-fg)}
+.pm-card-date{font-size:var(--fs-sm);color:var(--txt-secondary)}
+
+/* "No PM" explicit notice */
+.pm-clear-block{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 13px;
+  background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--r);
+}
+.pm-clear-ico{
+  width:30px;height:30px;border-radius:var(--r-sm);
+  background:var(--bg);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:16px;
+}
+.pm-clear-label{font-size:var(--fs-base);font-weight:600;color:var(--txt-secondary);margin-bottom:1px}
+.pm-clear-sub{font-size:var(--fs-sm);color:var(--txt-muted)}
+
+/* Workstation */
+.ws-block{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;background:var(--bg-subtle);
+  border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;
+}
+.ws-icon{width:28px;height:28px;border-radius:var(--r-sm);background:var(--accent-lt);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ws-lbl{font-size:var(--fs-xs);color:var(--txt-muted);margin-bottom:1px}
+.ws-name{font-size:var(--fs-base);font-weight:600;color:var(--txt-primary);font-family:'Cascadia Code','Consolas',monospace;letter-spacing:0.01em}
+
+/* Meta rows */
+.meta-row{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-bottom:1px solid var(--border-sub);font-size:var(--fs-base)}
+.meta-row:last-child{border-bottom:none}
+.meta-lbl{flex:0 0 90px;font-size:var(--fs-sm);color:var(--txt-muted);flex-shrink:0}
+.meta-val{flex:1;color:var(--txt-primary);font-weight:500;word-break:break-word}
+
+/* Contact rows */
+.contact-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-sub)}
+.contact-row:last-child{border-bottom:none}
+.contact-ico{width:28px;height:28px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:var(--txt-muted)}
+.contact-name{font-size:var(--fs-base);font-weight:600;color:var(--txt-primary);margin-bottom:1px}
+.contact-detail{font-size:var(--fs-sm);color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contact-detail a{color:var(--accent);text-decoration:none}
+.contact-detail a:hover{text-decoration:underline}
+
+/* Confluence CTA — prominent in frame/chamber state */
+.confluence-cta{
+  display:flex;align-items:center;gap:10px;
+  padding:13px 14px;margin-bottom:8px;
+  background:var(--accent);color:white;
+  border-radius:var(--r);text-decoration:none;
+  transition:opacity 0.1s;cursor:pointer;
+}
+.confluence-cta:hover{opacity:0.9}
+.confluence-cta-ico{font-size:20px;flex-shrink:0}
+.confluence-cta-body{min-width:0}
+.confluence-cta-label{font-size:var(--fs-base);font-weight:700;color:white;margin-bottom:1px}
+.confluence-cta-sub{font-size:var(--fs-xs);color:rgba(255,255,255,0.8)}
+
+/* Secondary doc links */
+.doc-link{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 0;border-bottom:1px solid var(--border-sub);
+  text-decoration:none;color:var(--txt-primary);transition:color 0.1s;
+}
+.doc-link:last-child{border-bottom:none}
+.doc-link:hover .doc-link-title{color:var(--accent);text-decoration:underline}
+.doc-ico{width:28px;height:28px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:var(--fs-xs);font-weight:700}
+.ico-photo{background:#EBF0FB;color:var(--t-up-fg)}
+.ico-sop{background:#EBF5E8;color:#1A5C1A}
+.ico-jha{background:var(--t-crit-bg);color:var(--t-crit-fg)}
+.ico-ref{background:var(--bg);color:var(--txt-secondary);border:1px solid var(--border)}
+.doc-link-title{font-size:var(--fs-base);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-link-src{font-size:var(--fs-xs);color:var(--txt-muted);margin-top:1px}
+
+/* Hierarchy tree (in right panel equip section) */
+.hier-tool{font-size:var(--fs-base);font-weight:600;padding:5px 0;display:flex;align-items:center;gap:7px}
+.hier-frame{font-size:var(--fs-base);color:var(--txt-secondary);padding:4px 0 4px 18px;display:flex;align-items:center;gap:7px}
+.hier-ch{font-size:var(--fs-sm);color:var(--txt-muted);padding:3px 0 3px 34px;display:flex;align-items:center;gap:7px}
+
+/* ================================================================
+   TOOLTIP
+================================================================ */
+#tip{
+  position:fixed;pointer-events:none;display:none;
+  background:var(--white);border:1px solid var(--border);border-radius:var(--r);
+  padding:9px 13px;font-size:var(--fs-base);line-height:1.4;max-width:240px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.10);z-index:200;
+}
+#tip b{font-weight:600;display:block;margin-bottom:2px}
+#tip span{font-size:var(--fs-sm);color:var(--txt-muted);display:block}
+
+/* ================================================================
+   LEFT DRAWER (standard mode)
+================================================================ */
+#left-drawer{
+  display:none;position:absolute;top:0;left:0;bottom:0;width:var(--lp-w);
+  background:var(--panel-bg);border-right:1px solid var(--border);
+  box-shadow:4px 0 24px rgba(0,0,0,0.14);z-index:50;flex-direction:column;overflow:hidden;
+}
+#left-drawer.open{display:flex}
+#drawer-backdrop{
+  display:none;position:absolute;inset:0;
+  background:rgba(0,0,0,0.12);z-index:40;
+}
+#drawer-backdrop.open{display:block}
+
+/* ================================================================
+   CONSTRAINED MODE
+================================================================ */
+#pm-only-view{
+  display:none;flex:1;flex-direction:column;overflow:hidden;
+  border-left:1px solid var(--border);
+}
+#pm-only-inner{flex:1;overflow-y:auto;padding:16px}
+
+/* ================================================================
+   RESPONSIVE
+================================================================ */
+@container app (max-width:900px){
+  #body-grid{grid-template-columns:1fr var(--rp-w)}
+  #left-panel{display:none}
+  #nav-drawer-btn{display:flex}
+}
+@container app (max-width:600px){
+  #body-grid{grid-template-columns:1fr}
+  #map-container{display:none}
+  #right-panel{display:none}
+  #pm-only-view{display:flex}
+  #nav-drawer-btn{display:flex}
+  .pm-tile:nth-child(n+4){display:none}
+}
+
+@keyframes slideLeft{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+@keyframes slideRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
+#left-panel{animation:slideLeft 0.24s cubic-bezier(0.22,1,0.36,1) both}
+#right-panel{animation:slideRight 0.24s cubic-bezier(0.22,1,0.36,1) both}
+</style>
+</head>
+<body>
+<div class="webpart-host">
+<div class="app-shell">
+<div id="app-grid">
+
+  <!-- TOP BAR -->
+  <header id="top-bar">
+    <button id="nav-drawer-btn" aria-label="Tool list">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <line x1="1" y1="3"  x2="13" y2="3"  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="1" y1="7"  x2="13" y2="7"  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="1" y1="11" x2="13" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      Tools
+    </button>
+    <div id="brand">
+      <div id="brand-icon">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <circle cx="6.5" cy="6.5" r="5" stroke="white" stroke-width="1.3" fill="none"/>
+          <circle cx="6.5" cy="6.5" r="1.8" fill="white"/>
+        </svg>
+      </div>
+      CVD Central
+    </div>
+    <div id="tb-sep"></div>
+    <div id="tb-crumb">
+      <span>Fab Operations</span><span style="opacity:.4">›</span>
+      <span class="here">Shift Execution Map</span>
+    </div>
+    <div id="tb-right">
+      <button id="btn-reset">Reset Map</button>
+    </div>
+  </header>
+
+  <!-- PM SUMMARY STRIP — tier counts, clickable as filters -->
+  <div id="pm-strip">
+    <div class="pm-tile tile-crit" data-tier="critical" id="tile-crit">
+      <div><div class="pt-count" id="tc-crit">0</div></div>
+      <div class="pt-info"><div class="pt-label">Critical</div><div class="pt-desc">Overdue / today</div></div>
+    </div>
+    <div class="pm-tile tile-pri" data-tier="priority" id="tile-pri">
+      <div><div class="pt-count" id="tc-pri">0</div></div>
+      <div class="pt-info"><div class="pt-label">Priority</div><div class="pt-desc">1–3 days</div></div>
+    </div>
+    <div class="pm-tile tile-up" data-tier="upcoming" id="tile-up">
+      <div><div class="pt-count" id="tc-up">0</div></div>
+      <div class="pt-info"><div class="pt-label">Upcoming</div><div class="pt-desc">4–14 days</div></div>
+    </div>
+    <div class="pm-tile tile-total" data-tier="all" id="tile-total">
+      <div><div class="pt-count" id="tc-total">0</div></div>
+      <div class="pt-info"><div class="pt-label">Total</div><div class="pt-desc">2-week window</div></div>
+    </div>
+  </div>
+
+  <!-- BODY GRID -->
+  <div id="body-grid">
+
+    <div id="drawer-backdrop"></div>
+
+    <!-- LEFT PANEL -->
+    <aside id="left-panel">
+      <div id="lp-controls">
+        <div id="lp-eyebrow">PCVD Tools</div>
+        <div id="search-wrap">
+          <span id="search-icon">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.3"/>
+              <line x1="8.5" y1="8.5" x2="11.5" y2="11.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <input id="search-input" type="text" placeholder="Search tools…" autocomplete="off"/>
+        </div>
+        <div id="tier-filter">
+          <button class="tier-chip tc-all active" data-tier="all">All</button>
+          <button class="tier-chip tc-crit" data-tier="critical">Critical</button>
+          <button class="tier-chip tc-pri"  data-tier="priority">Priority</button>
+          <button class="tier-chip tc-up"   data-tier="upcoming">Upcoming</button>
+        </div>
+      </div>
+      <div id="lp-list-region">
+        <div id="lp-list-label">Sorted by urgency</div>
+        <div id="tool-list"></div>
+      </div>
+      <div id="lp-footer">
+        <div class="lp-li"><div class="lp-vbar a"></div>Vendor A</div>
+        <div class="lp-li"><div class="lp-vbar b"></div>Vendor B</div>
+        <div class="lp-li"><div class="lp-vbar c"></div>Vendor C</div>
+      </div>
+    </aside>
+
+    <!-- Left drawer (standard mode) -->
+    <div id="left-drawer">
+      <div style="padding:11px 13px 9px;border-bottom:1px solid var(--border-sub);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+        <span style="font-size:var(--fs-label);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--txt-muted)">PCVD Tools</span>
+        <button id="drawer-close-btn" style="background:none;border:none;font-size:20px;color:var(--txt-muted);cursor:pointer;padding:2px 6px">×</button>
+      </div>
+      <div style="padding:9px 13px 10px;border-bottom:1px solid var(--border-sub);flex-shrink:0">
+        <input id="drawer-search" type="text" placeholder="Search tools…" autocomplete="off"
+          style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:var(--fs-base);background:var(--bg);outline:none"/>
+      </div>
+      <div id="drawer-tool-list" style="flex:1;overflow-y:auto;padding-bottom:20px"></div>
+    </div>
+
+    <!-- MAP -->
+    <div id="map-container">
+      <canvas id="cv"></canvas>
+    </div>
+
+    <!-- Constrained mode: PM-only list -->
+    <div id="pm-only-view">
+      <div id="pm-only-inner">
+        <div style="font-size:var(--fs-heading);font-weight:700;margin-bottom:4px">PM Schedule — Next 14 Days</div>
+        <div style="font-size:var(--fs-sm);color:var(--txt-muted);margin-bottom:16px">Source: 2-week PM feed</div>
+        <div id="pm-only-list"></div>
+      </div>
+    </div>
+
+    <!-- ===================================================
+         RIGHT PANEL — 4 states
+    ==================================================== -->
+    <aside id="right-panel">
+
+      <!-- STATE A: No selection — shift PM queue -->
+      <div class="rp-state active" id="rp-state-a">
+        <div id="rp-idle-hd">
+          <div id="rp-idle-title">Shift PM Queue</div>
+          <div id="rp-idle-sub">Next 14 days · Select a tool to drill down</div>
+        </div>
+        <div class="rp-scroll" id="rp-queue-scroll">
+          <div id="rp-pm-queue"><!-- renderIdleQueue() --></div>
+        </div>
+      </div>
+
+      <!-- STATE B/C: Tool selected (with or without PM) -->
+      <div class="rp-state" id="rp-state-bc">
+        <div id="rp-sel-hd">
+          <div class="rp-back" id="rp-sel-back">← Back to Shift Queue</div>
+          <div class="rp-tool-id" id="rp-sel-id">—</div>
+          <div class="rp-tool-meta" id="rp-sel-meta">—</div>
+          <div id="rp-badge-wrap"></div>
+        </div>
+        <div class="rp-scroll" id="rp-bc-scroll"><!-- renderToolPanel() --></div>
+      </div>
+
+      <!-- STATE D: Frame or chamber selected -->
+      <div class="rp-state" id="rp-state-d">
+        <div id="rp-sub-hd">
+          <div class="rp-back" id="rp-sub-back">← Back to Tool</div>
+          <div class="rp-breadcrumb" id="rp-sub-breadcrumb"></div>
+          <div class="rp-tool-id" id="rp-sub-id">—</div>
+        </div>
+        <div class="rp-scroll" id="rp-d-scroll"><!-- renderSubPanel() --></div>
+      </div>
+
+    </aside>
+
+  </div><!-- /#body-grid -->
+</div><!-- /#app-grid -->
+</div><!-- /.app-shell -->
+</div><!-- /.webpart-host -->
+
+<div id="tip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+
+// ============================================================
+// PM SCHEDULE DATA
+// ─────────────────────────────────────────────────────────────
+// Shape: { id, level, frame, chamber, pmType, dueDate, daysUntilDue }
+//
+// level: 'tool' | 'frame' | 'chamber'
+// frame: frame label if level !== 'tool', else null
+// chamber: chamber label if level === 'chamber', else null
+//
+// PM tier logic (v5 language):
+//   daysUntilDue <= 0  → 'critical'
+//   daysUntilDue <= 3  → 'priority'
+//   daysUntilDue <= 14 → 'upcoming'
+//   no PM in window    → 'clear'
+// ============================================================
+const PM_FEED = [
+  // Critical: overdue / today
+  {id:'PCVD-103', level:'chamber', frame:'Frame 1', chamber:'CH-B', pmType:'Action',    dueDate:'Mar 31, 2025', daysUntilDue:-3},
+  // Priority: 1–3 days
+  {id:'PCVD-101', level:'tool',    frame:null,       chamber:null,   pmType:'Action PM',             dueDate:'Apr 7, 2025',  daysUntilDue: 1},
+  {id:'PCVD-107', level:'frame',   frame:'Frame 1',  chamber:null,   pmType:'Annual Action', dueDate:'Apr 9, 2025',  daysUntilDue: 3},
+  // Upcoming: 4–14 days
+  {id:'PCVD-113', level:'tool',    frame:null,       chamber:null,   pmType:'Action',             dueDate:'Apr 10, 2025', daysUntilDue: 4},
+  {id:'PCVD-121', level:'chamber', frame:'Frame 1',  chamber:'CH-A', pmType:'Action',    dueDate:'Apr 10, 2025', daysUntilDue: 4},
+  {id:'PCVD-115', level:'tool',    frame:null,       chamber:null,   pmType:'Action',             dueDate:'Apr 11, 2025', daysUntilDue: 5},
+  {id:'PCVD-102', level:'tool',    frame:null,       chamber:null,   pmType:'Action',                dueDate:'Apr 13, 2025', daysUntilDue: 7},
+  {id:'PCVD-108', level:'chamber', frame:'Frame 1',  chamber:'CH-B', pmType:'Action',    dueDate:'Apr 14, 2025', daysUntilDue: 8},
+  {id:'PCVD-122', level:'tool',    frame:null,       chamber:null,   pmType:'Action',             dueDate:'Apr 16, 2025', daysUntilDue:10},
+  {id:'PCVD-119', level:'tool',    frame:null,       chamber:null,   pmType:'Action',          dueDate:'Apr 19, 2025', daysUntilDue:13},
+];
+
+// ============================================================
+// TOOL METADATA
+// ============================================================
+const TOOL_META = {
+  'PCVD-101': {workstation:'WS-PCVD-101', owners:[{name:'T. Park',    email:'t.park@fab.example.com',   phone:'x4821'}], frames:[{label:'Frame 1',chambers:['CH-A','CH-B','CH-C']}]},
+  'PCVD-102': {workstation:'WS-PCVD-102', owners:[{name:'E. Santos',  email:'e.santos@fab.example.com', phone:'x4822'}], frames:[{label:'Frame 1',chambers:['CH-A','CH-B']}]},
+  'PCVD-103': {workstation:'WS-PCVD-103', owners:[{name:'R. Okonkwo', email:'r.okonkwo@fab.example.com',phone:'x4823'}], frames:[{label:'Frame 1',chambers:['CH-A','CH-B']},{label:'Frame 2',chambers:['CH-A']}]},
+  'PCVD-107': {workstation:'WS-PCVD-107', owners:[{name:'T. Park',    email:'t.park@fab.example.com',   phone:'x4821'}], frames:[{label:'Frame 1',chambers:['CH-A','CH-B','CH-C']}]},
+  'PCVD-108': {workstation:'WS-PCVD-108', owners:[{name:'E. Santos',  email:'e.santos@fab.example.com', phone:'x4822'}], frames:[{label:'Frame 1',chambers:['CH-A','CH-B']}]},
+  'PCVD-113': {workstation:'WS-PCVD-113', owners:[{name:'M. Chen',    email:'m.chen@fab.example.com',   phone:'x4831'}], frames:[{label:'Frame 1',chambers:['CH-A','CH-B']}]},
+  'PCVD-115': {workstation:'WS-PCVD-115', owners:[{name:'M. Chen',    email:'m.chen@fab.example.com',   phone:'x4831'}], frames:[{label:'Frame 1',chambers:['CH-A','CH-B']}]},
+  'PCVD-119': {workstation:'WS-PCVD-119', owners:[{name:'D. Alvarez', email:'d.alvarez@fab.example.com',phone:'x4840'}], frames:[{label:'Frame 1',chambers:['CH-A']}]},
+  'PCVD-121': {workstation:'WS-PCVD-121', owners:[{name:'D. Alvarez', email:'d.alvarez@fab.example.com',phone:'x4840'}], frames:[{label:'Frame 1',chambers:['CH-A','CH-B']}]},
+  'PCVD-122': {workstation:'WS-PCVD-122', owners:[{name:'R. Okonkwo', email:'r.okonkwo@fab.example.com',phone:'x4823'}], frames:[{label:'Frame 1',chambers:['CH-A','CH-B']}]},
+};
+function getToolMeta(id){
+  return TOOL_META[id]||{workstation:`WS-${id}`,owners:[{name:'See area lead',email:'',phone:''}],frames:[{label:'Frame 1',chambers:['CH-A','CH-B']}]};
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONFLUENCE_REFS — hierarchical: tool / frame / chamber
+// Structure: CONFLUENCE_REFS[toolId] = {
+//   tool:   [{label,type,href}],          ← shown at tool-level selection
+//   frames: {
+//     'Frame 1': {
+//       refs:     [{label,type,href}],     ← shown at frame selection
+//       chambers: {
+//         'CH-A': [{label,type,href}],     ← shown at chamber selection
+//       }
+//     }
+//   }
+// }
+// ─────────────────────────────────────────────────────────────
+const CONFLUENCE_REFS = {
+  'PCVD-101':{
+    tool:[
+      {label:'Quarterly PM Procedure',type:'sop', href:'#'},
+      {label:'JHA — Quarterly PM',    type:'jha', href:'#'},
+    ],
+    frames:{
+      'Frame 1':{
+        refs:[{label:'Frame Photo — F1 (North)',type:'photo',href:'#'}],
+        chambers:{
+          'CH-A':[{label:'CH-A Photo',           type:'photo',href:'#'},{label:'RF Match Cal — CH-A',type:'ref',href:'#'}],
+          'CH-B':[{label:'CH-B Photo',           type:'photo',href:'#'},{label:'Dep Rate Log — CH-B', type:'ref',href:'#'}],
+          'CH-C':[{label:'CH-C Photo',           type:'photo',href:'#'}],
+        }
+      }
+    }
+  },
+  'PCVD-102':{
+    tool:[
+      {label:'Annual PM Procedure',type:'sop',href:'#'},
+      {label:'JHA — Annual PM',    type:'jha',href:'#'},
+    ],
+    frames:{
+      'Frame 1':{
+        refs:[{label:'Frame Photo — F1',type:'photo',href:'#'}],
+        chambers:{
+          'CH-A':[{label:'CH-A Photo',type:'photo',href:'#'}],
+          'CH-B':[{label:'CH-B Photo',type:'photo',href:'#'}],
+        }
+      }
+    }
+  },
+  'PCVD-103':{
+    tool:[
+      {label:'Quarterly PM Procedure',type:'sop',href:'#'},
+      {label:'JHA — Quarterly PM',    type:'jha',href:'#'},
+    ],
+    frames:{
+      'Frame 1':{
+        refs:[{label:'Frame Photo — F1',type:'photo',href:'#'}],
+        chambers:{
+          'CH-A':[{label:'CH-A Photo — F1',            type:'photo',href:'#'}],
+          'CH-B':[{label:'CH-B Photo — F1',            type:'photo',href:'#'},{label:'RF Match Cal — F1/CH-B',type:'ref',href:'#'}],
+        }
+      },
+      'Frame 2':{
+        refs:[{label:'Frame Photo — F2',type:'photo',href:'#'}],
+        chambers:{
+          'CH-A':[{label:'CH-A Photo — F2',type:'photo',href:'#'}],
+        }
+      }
+    }
+  },
+  'PCVD-107':{
+    tool:[
+      {label:'Annual PM Procedure',  type:'sop',href:'#'},
+      {label:'JHA — Annual PM',      type:'jha',href:'#'},
+    ],
+    frames:{
+      'Frame 1':{
+        refs:[{label:'Frame Photo — F1',type:'photo',href:'#'}],
+        chambers:{
+          'CH-A':[{label:'CH-A Photo',type:'photo',href:'#'}],
+          'CH-B':[{label:'CH-B Photo',type:'photo',href:'#'}],
+          'CH-C':[{label:'CH-C Photo',type:'photo',href:'#'}],
+        }
+      }
+    }
+  },
+  'PCVD-108':{
+    tool:[
+      {label:'Dep Rate Calibration Procedure',type:'sop',href:'#'},
+      {label:'JHA — Calibration',             type:'jha',href:'#'},
+    ],
+    frames:{
+      'Frame 1':{
+        refs:[{label:'Frame Photo — F1',type:'photo',href:'#'}],
+        chambers:{
+          'CH-A':[{label:'CH-A Dep Rate Chart',type:'ref',href:'#'},{label:'CH-A Photo',type:'photo',href:'#'}],
+          'CH-B':[{label:'CH-B Dep Rate Chart',type:'ref',href:'#'},{label:'CH-B Photo',type:'photo',href:'#'}],
+        }
+      }
+    }
+  },
+};
+
+// ─────────────────────────────────────────────────────────────
+// getRefs — level-aware reference resolver
+// Returns the most specific refs available for the selection level.
+// Priority: chamber > frame > tool > default fallback
+// ─────────────────────────────────────────────────────────────
+function getRefs(toolId,frame,chamber){
+  const entry=CONFLUENCE_REFS[toolId];
+  const fallback=[
+    {label:'Frame img',type:'photo',href:'#'},
+    {label:'PM Procedure',type:'sop',  href:'#'},
+    {label:'JHA',         type:'jha',  href:'#'},
+  ];
+  if(!entry) return fallback;
+
+  // Chamber-level: return chamber-specific refs + frame photo/refs for context
+  if(chamber&&frame){
+    const fd=entry.frames?.[frame];
+    const chRefs=fd?.chambers?.[chamber]||[];
+    const frRefs=fd?.refs||[];
+    const result=[...chRefs,...frRefs];
+    return result.length?result:fallback;
+  }
+  // Frame-level: return frame refs + tool SOPs/JHAs for context
+  if(frame){
+    const fd=entry.frames?.[frame];
+    const frRefs=fd?.refs||[];
+    const toolRefs=(entry.tool||[]).filter(r=>r.type==='sop'||r.type==='jha');
+    const result=[...frRefs,...toolRefs];
+    return result.length?result:fallback;
+  }
+  // Tool-level: return tool refs
+  const toolRefs=entry.tool||[];
+  return toolRefs.length?toolRefs:fallback;
+}
+
+// ============================================================
+// PM TIER HELPERS (v5 language)
+// ============================================================
+function pmTier(days){
+  if(days===null||days===undefined) return 'clear';
+  if(days<=0)  return 'critical';
+  if(days<=3)  return 'priority';
+  if(days<=14) return 'upcoming';
+  return 'clear';
+}
+function pmTierLabel(tier){
+  return {critical:'Critical',priority:'Priority',upcoming:'Upcoming',clear:'Clear'}[tier]||tier;
+}
+function pmTierOrder(tier){
+  return {critical:0,priority:1,upcoming:2,clear:3}[tier]??3;
+}
+function pmDayLabel(days){
+  if(days===null||days===undefined) return '–';
+  if(days<0)  return `T+${Math.abs(days)}d`;  // overdue: T+3d
+  if(days===0) return 'Today';
+  if(days===1) return 'T−1d';
+  return `T−${days}d`;
+}
+
+function getPMsForTool(id){
+  return PM_FEED.filter(p=>p.id===id);
+}
+function getToolRollupTier(id){
+  const pms=getPMsForTool(id);
+  if(!pms.length) return 'clear';
+  // highest urgency = lowest tier order
+  return pms.reduce((best,p)=>{
+    const t=pmTier(p.daysUntilDue);
+    return pmTierOrder(t)<pmTierOrder(best)?t:best;
+  },'clear');
+}
+// PM for a specific frame (any level under that frame)
+function getPMsForFrame(toolId,frameLabel){
+  return PM_FEED.filter(p=>p.id===toolId&&(p.frame===frameLabel||p.level==='frame'&&p.frame===frameLabel));
+}
+// PM for a specific chamber
+function getPMsForChamber(toolId,frameLabel,chamberLabel){
+  return PM_FEED.filter(p=>p.id===toolId&&p.frame===frameLabel&&p.chamber===chamberLabel);
+}
+function getFrameRollupTier(toolId,frameLabel){
+  const pms=getPMsForFrame(toolId,frameLabel);
+  if(!pms.length) return 'clear';
+  return pms.reduce((best,p)=>{
+    const t=pmTier(p.daysUntilDue);
+    return pmTierOrder(t)<pmTierOrder(best)?t:best;
+  },'clear');
+}
+function getChamberTier(toolId,frameLabel,chamberLabel){
+  const pms=getPMsForChamber(toolId,frameLabel,chamberLabel);
+  if(!pms.length) return 'clear';
+  return pms.reduce((best,p)=>{
+    const t=pmTier(p.daysUntilDue);
+    return pmTierOrder(t)<pmTierOrder(best)?t:best;
+  },'clear');
+}
+
+// ============================================================
+// SCENE DATA (v43 — unchanged)
+// ============================================================
+const D={
+  blds:[
+    {id:"B",lb:"Building B",x:-52,z:-44,w:40,d:34},
+    {id:"A",lb:"Building A",x:-10,z:-44,w:52,d:34},
+    {id:"C",lb:"Building C",x:-76,z:4,  w:26,d:22},
+  ],
+  cor:{w:1.5,s:{x:-51,z:4},e:{x:-51,z:-10}},
+  ph:{x:-52,z:-28,w:14,d:16},
+  rows:[
+    {id:"B-7", b:"B",n:7, x:-30,zS:-42,zE:-12},
+    {id:"B-8", b:"B",n:8, x:-20,zS:-42,zE:-12},
+    {id:"A-9",  b:"A",n:9,  x:-4, zS:-42,zE:-12},
+    {id:"A-10", b:"A",n:10, x:6,  zS:-42,zE:-12},
+    {id:"A-11", b:"A",n:11, x:16, zS:-42,zE:-12},
+    {id:"A-12", b:"A",n:12, x:26, zS:-42,zE:-12},
+    {id:"A-13", b:"A",n:13, x:36, zS:-42,zE:-12},
+    {id:"C-5", b:"C",n:5, x:-70,zS:6,  zE:24},
+    {id:"C-6b",b:"C",n:6, x:-58,zS:17, zE:24},
+  ],
+  rg:4,to:2,
+  wk:{B:{cr:[{z:-27,xS:-38,xE:-12}]},A:{cr:[{z:-27,xS:-10,xE:42}]},C:{cr:[{z:15,xS:-76,xE:-50}]}},
+  tools:[
+    {id:"PCVD-101",v:"a",ri:"B-7", s:"left",  p:.27},
+    {id:"PCVD-102",v:"b",ri:"B-7", s:"right", p:.27},
+    {id:"PCVD-103",v:"a",ri:"B-7", s:"left",  p:.57},
+    {id:"PCVD-107",v:"a",ri:"B-8", s:"left",  p:.33},
+    {id:"PCVD-108",v:"b",ri:"A-9",  s:"left",  p:.09},
+    {id:"PCVD-109",v:"b",ri:"A-9",  s:"left",  p:.17},
+    {id:"PCVD-111",v:"b",ri:"A-10", s:"right", p:.15},
+    {id:"PCVD-112",v:"a",ri:"A-10", s:"right", p:.74},
+    {id:"PCVD-110",v:"a",ri:"A-10", s:"right", p:.64},
+    {id:"PCVD-126",v:"a",ri:"A-10", s:"right", p:.84},
+    {id:"PCVD-113",v:"b",ri:"A-11", s:"left",  p:.59},
+    {id:"PCVD-114",v:"a",ri:"A-11", s:"left",  p:.07},
+    {id:"PCVD-115",v:"b",ri:"A-11", s:"left",  p:.27},
+    {id:"PCVD-127",v:"b",ri:"A-11", s:"left",  p:.38},
+    {id:"PCVD-116",v:"a",ri:"A-12", s:"right", p:.12},
+    {id:"PCVD-118",v:"a",ri:"A-13", s:"left",  p:.84},
+    {id:"PCVD-119",v:"b",ri:"A-13", s:"right", p:.86},
+    {id:"PCVD-119b",v:"b",ri:"A-13",s:"right", p:.97},
+    {id:"PCVD-120",v:"a",ri:"C-5",  s:"right", p:.12},
+    {id:"PCVD-121",v:"b",ri:"C-5",  s:"right", p:.30},
+    {id:"PCVD-122",v:"a",ri:"C-5",  s:"right", p:.72},
+    {id:"PCVD-123",v:"b",ri:"C-5",  s:"right", p:.93},
+    {id:"PCVD-124",v:"a",ri:"C-6b", s:"left",  p:.55},
+    {id:"PCVD-125",v:"b",ri:"C-6b", s:"right", p:.75},
+  ],
+  ts:{w:2.0,d:1.6,h:1.0},
+  vn:{a:"Vendor A",b:"Vendor B",c:"Vendor C"},
+};
+const BLDG_LABELS={B:'Bldg 29',A:'Bldg 90',C:'Bldg 19'};
+const HG=D.rg/2;
+const VENDOR_COLORS={
+  a:{face:0x1A4E96,top:0x3B6EC4,shadow:0x0E2F5C},
+  b:{face:0x1F8A4C,top:0x3AAD6A,shadow:0x0F4F2A},
+  c:{face:0x921428,top:0xB82035,shadow:0x550B18},
+};
+const SEL_COLOR=new THREE.Color(0x0078D4);
+const WHITE=new THREE.Color(0xffffff);
+// Map tier → mesh tint (lighter = more urgent — from PM_FEED, never live status)
+const TIER_TINTS={critical:0.18,priority:0.10,upcoming:0.04,clear:0};
+
+// ============================================================
+// RENDERER
+// ============================================================
+const cvEl=document.getElementById('cv');
+const R=new THREE.WebGLRenderer({canvas:cvEl,antialias:true});
+R.setPixelRatio(Math.min(devicePixelRatio,2));
+R.setClearColor(0xEDEEF1);
+R.shadowMap.enabled=true; R.shadowMap.type=THREE.PCFSoftShadowMap;
+const S=new THREE.Scene();
+S.fog=new THREE.FogExp2(0xEDEEF1,.003);
+const cam=new THREE.PerspectiveCamera(50,1,0.5,500);
+S.add(new THREE.AmbientLight(0xffffff,.9));
+const dl=new THREE.DirectionalLight(0xffffff,.6);
+dl.position.set(20,50,30); dl.castShadow=true;
+dl.shadow.mapSize.set(1024,1024);
+dl.shadow.camera.left=-100; dl.shadow.camera.right=60;
+dl.shadow.camera.top=60;   dl.shadow.camera.bottom=-40;
+S.add(dl); S.add(new THREE.HemisphereLight(0xc8d8f0,0xffffff,.3));
+
+// ============================================================
+// GEOMETRY HELPERS (unchanged from v43)
+// ============================================================
+// fR — flat floor plane helper
+// side:2 (DoubleSide) REMOVED. DoubleSide transparent meshes render both
+// front and back face, effectively blending twice per pixel:
+// effective_opacity = 1-(1-o)^2. At o=0.65 → ~88% — far heavier than
+// intended, creating stark contrast that flickers as camera orbits.
+// FrontSide (default) = correct single-blend at the specified opacity.
+function fR(x,z,w,d,y,c,o){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshBasicMaterial({color:c,opacity:o,transparent:o<1}));m.rotation.x=-Math.PI/2;m.position.set(x+w/2,y,z+d/2);m.receiveShadow=true;return m}
+function oR(x,z,w,d,y,c,o){return new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x,y,z),new THREE.Vector3(x+w,y,z),new THREE.Vector3(x+w,y,z+d),new THREE.Vector3(x,y,z+d)]),new THREE.LineBasicMaterial({color:c,opacity:o,transparent:o<1,depthWrite:false}))}
+function ln(a,b,c,d,y,col,op){return new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a,y,b),new THREE.Vector3(c,y,d)]),new THREE.LineBasicMaterial({color:col,opacity:op,transparent:op<1}))}
+function mkRowLbl(text,x,z,flip){const c=document.createElement('canvas');c.width=256;c.height=256;const cx=c.getContext('2d');cx.fillStyle='rgba(18,42,110,0.90)';const r=28,m=8,s=240;cx.beginPath();cx.moveTo(m+r,m);cx.lineTo(m+s-r,m);cx.quadraticCurveTo(m+s,m,m+s,m+r);cx.lineTo(m+s,m+s-r);cx.quadraticCurveTo(m+s,m+s,m+s-r,m+s);cx.lineTo(m+r,m+s);cx.quadraticCurveTo(m,m+s,m,m+s-r);cx.lineTo(m,m+r);cx.quadraticCurveTo(m,m,m+r,m);cx.closePath();cx.fill();cx.save();if(flip){cx.translate(128,128);cx.rotate(Math.PI);cx.translate(-128,-128)}cx.font='700 148px -apple-system,BlinkMacSystemFont,sans-serif';cx.fillStyle='#ffffff';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(text,128,132);cx.restore();const tex=new THREE.CanvasTexture(c);tex.minFilter=THREE.LinearFilter;const mesh=new THREE.Mesh(new THREE.PlaneGeometry(2.8,2.8),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,depthWrite:false}));mesh.rotation.set(-Math.PI/2,0,0);mesh.position.set(x,0.1,z);mesh.renderOrder=5;return mesh}
+function sp(text,o){const c2=document.createElement('canvas');c2.width=512;c2.height=128;const cx=c2.getContext('2d');cx.font=`${o.bld?'700':'400'} ${o.fs||28}px -apple-system,BlinkMacSystemFont,sans-serif`;cx.fillStyle=o.col||'#1a2a4a';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(text,256,64);const t=new THREE.CanvasTexture(c2);t.minFilter=THREE.LinearFilter;const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,opacity:o.op||.9,depthTest:false}));const sc=o.sc||5;spr.scale.set(sc,sc*.25,1);return spr}
+
+function mkBldgSprite(text){
+  const cw=280,ch=68,c=document.createElement('canvas');
+  c.width=cw;c.height=ch;
+  const cx=c.getContext('2d');
+  // Navy pill — matches row number badge color family
+  cx.fillStyle='rgba(18,42,110,0.84)';
+  const r=14;
+  cx.beginPath();
+  cx.moveTo(r,2);cx.lineTo(cw-r,2);cx.quadraticCurveTo(cw,2,cw,2+r);
+  cx.lineTo(cw,ch-r);cx.quadraticCurveTo(cw,ch,cw-r,ch);
+  cx.lineTo(r,ch);cx.quadraticCurveTo(2,ch,2,ch-r);
+  cx.lineTo(2,2+r);cx.quadraticCurveTo(2,2,r,2);
+  cx.closePath();cx.fill();
+  cx.font='700 48px -apple-system,BlinkMacSystemFont,sans-serif';
+  cx.fillStyle='#ffffff';cx.textAlign='center';cx.textBaseline='middle';
+  cx.fillText(text,cw/2,ch/2+1);
+  const tex=new THREE.CanvasTexture(c);tex.minFilter=THREE.LinearFilter;
+  const spr=new THREE.Sprite(
+    new THREE.SpriteMaterial({map:tex,transparent:true,opacity:0.90,depthTest:false})
+  );
+  spr.scale.set(7.0,7.0*(ch/cw),1);  // 7.0 × 1.7 world units
+  spr.renderOrder=6;  // render after all fills (ro:3), lines (ro:4), row labels (ro:5)
+  return spr;
+}
+
+const FLOOR_TILE=4.0, GFX_EDGE=-100, GFZ_TOP=45;
+
+// Shared canvas factory — one call per fill variant, cloned per plane
+function mkFloorTex(fill){
+  const sz=256,can=document.createElement('canvas');
+  can.width=sz;can.height=sz;
+  const ctx=can.getContext('2d');
+  ctx.fillStyle=fill;
+  ctx.fillRect(0,0,sz,sz);
+  ctx.strokeStyle='rgba(136,153,183,0.38)'; // same border everywhere
+  ctx.lineWidth=3;
+  ctx.strokeRect(1.5,1.5,sz-3,sz-3);
+  const tex=new THREE.CanvasTexture(can);
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+  tex.generateMipmaps=true;
+  tex.minFilter=THREE.LinearMipmapLinearFilter;
+  tex.magFilter=THREE.LinearFilter;
+  tex.anisotropy=Math.min(4,R.capabilities.getMaxAnisotropy());
+  return tex;
+}
+
+// Global exterior floor — single plane covering full scene
+// fw=170 (x:-100→+70), fd=110 (z:-65→+45), center (-15,-10)
+function mkGlobalFloor(){
+  const fw=170,fd=110,cx=-15,cz=-10;
+  const tex=mkFloorTex('#EAEDF3');
+  tex.repeat.set(fw/FLOOR_TILE,fd/FLOOR_TILE);
+  tex.needsUpdate=true;
+  const mat=new THREE.MeshBasicMaterial({map:tex,transparent:false});
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(fw,fd),mat);
+  mesh.rotation.x=-Math.PI/2;
+  mesh.position.set(cx,0.002,cz);
+  return mesh;
+}
+
+// Per-building floor — UV-phase-aligned to global floor
+// Sits at y=0.005 (opaque, cleanly covers global floor in building area)
+// Lighter fill (#F2F5FB) = same grid, different tone. No scale change.
+function mkBldgFloor(bx,bz,bw,bd){
+  const tex=mkFloorTex('#F2F5FB').clone();  // shared canvas, cloned for per-plane UV
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+  tex.repeat.set(bw/FLOOR_TILE,bd/FLOOR_TILE);
+  // Phase-align UV to global floor — grid lines snap at all building borders.
+  // offset.y uses GFZ_TOP (Z where V=0) and subtracts bd because building
+  // UV(0,0) is at the HIGH-Z corner of the plane (world Z = bz + bd).
+  tex.offset.set(
+    ((bx - GFX_EDGE) / FLOOR_TILE) % 1,
+    ((GFZ_TOP - bz - bd) / FLOOR_TILE) % 1
+  );
+  tex.generateMipmaps=true;
+  tex.minFilter=THREE.LinearMipmapLinearFilter;
+  tex.anisotropy=Math.min(4,R.capabilities.getMaxAnisotropy());
+  tex.needsUpdate=true;
+  const mat=new THREE.MeshBasicMaterial({map:tex,transparent:false});
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(bw,bd),mat);
+  mesh.rotation.x=-Math.PI/2;
+  mesh.position.set(bx+bw/2,0.005,bz+bd/2);
+  return mesh;
+}
+
+// ──────────────────────────────────────────────────────────────
+// BAY / AISLE DIVIDER
+// Very thin vertical plane at aisle center between row pairs.
+// Height 1.9 (taller than tool 1.0) — visible from isometric view
+// without blocking raycasting on tools (tools are ≈1.8 units wide of the panel).
+// Opacity kept at 0.065 — just enough to read as a spatial boundary.
+// ──────────────────────────────────────────────────────────────
+function mkBayDiv(x,zS,zE){
+  const d=zE-zS,h=1.9;
+  const mat=new THREE.MeshBasicMaterial({
+    color:0xB8D2EA,transparent:true,opacity:0.065,
+    side:THREE.DoubleSide,depthWrite:false
+  });
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(d,h),mat);
+  mesh.rotation.y=Math.PI/2;
+  mesh.position.set(x,h/2,zS+d/2);
+  mesh.renderOrder=2;
+  S.add(mesh);
+  // Hairline floor line removed — y=0.005 is below opaque tile floor (y=0.008)
+  // and lines don't depth-test consistently at glancing angles.
+}
+
+// ============================================================
+// BUILD SCENE
+// ============================================================
+const TM=[],TD=new Map(),RM=new Map();
+
+// ── GLOBAL FLOOR (exterior, 4-unit grid, full scene)
+S.add(mkGlobalFloor());
+
+// ── BUILDING FLOORS + OUTLINES + LABELS ───────────────────────
+// mkBldgFloor: aligned opaque floor (lighter fill, same grid scale).
+// Label: positioned top-LEFT of building (b.x+4.0, b.z+2.5).
+//   Inset 4.0 from LEFT X edge (half sprite width + 0.5 buffer).
+//   Inset 2.5 from top Z edge (north face of building in plan view).
+D.blds.forEach(b=>{
+  S.add(mkBldgFloor(b.x,b.z,b.w,b.d));           // aligned floor, lighter fill
+  S.add(oR(b.x,b.z,b.w,b.d,.08,0x8A97AA,.90));   // building outline
+  const bspr=mkBldgSprite(BLDG_LABELS[b.id]);
+  bspr.position.set(b.x+4.0,4.5,b.z+2.5);        // top-LEFT of building zone
+  S.add(bspr);
+});
+const cs=D.cor.s,ce=D.cor.e,cL=Math.abs(ce.z-cs.z),cW=D.cor.w;
+// depthWrite:false — transparent fills must not write depth or they clip each other
+{const cf=fR(cs.x-cW/2,ce.z,cW,cL,0.020,0xE4E9F0,0.65);cf.material.depthWrite=false;cf.renderOrder=2;S.add(cf);}
+S.add(ln(cs.x-cW/2,cs.z,ce.x-cW/2,ce.z,.09,0xB0BAC8,.70));
+S.add(ln(cs.x+cW/2,cs.z,ce.x+cW/2,ce.z,.09,0xB0BAC8,.70));
+const pa=D.ph;
+{const pf=fR(pa.x,pa.z,pa.w,pa.d,0.020,0xFBF0DF,0.82);pf.material.depthWrite=false;pf.renderOrder=2;S.add(pf);}
+S.add(oR(pa.x,pa.z,pa.w,pa.d,.09,0xC8965A,.75));
+//  zone label — v9: backed amber-pill sprite replaces bare sp() call.
+// sp("Ph",...) had no background, 28px text, 0.7 opacity — unreadable
+// against the light floor. New: amber rounded-rect backing + white text,
+// always faces camera (Sprite), depthTest:false keeps it visible.
+{
+  const pc=document.createElement('canvas');pc.width=256;pc.height=80;
+  const px=pc.getContext('2d');
+  // Amber pill
+  const pr=12,pw=252,ph=76;
+  px.fillStyle='rgba(196,138,58,0.88)';
+  px.beginPath();px.moveTo(pr,2);px.lineTo(pw-pr,2);px.quadraticCurveTo(pw,2,pw,2+pr);px.lineTo(pw,ph-pr);px.quadraticCurveTo(pw,ph,pw-pr,ph);px.lineTo(pr,ph);px.quadraticCurveTo(2,ph,2,ph-pr);px.lineTo(2,2+pr);px.quadraticCurveTo(2,2,pr,2);px.closePath();px.fill();
+  // White label
+  px.font='700 46px -apple-system,BlinkMacSystemFont,sans-serif';
+  px.fillStyle='#ffffff';px.textAlign='center';px.textBaseline='middle';
+  px.fillText('PHOTO',128,41);
+  const ptex=new THREE.CanvasTexture(pc);ptex.minFilter=THREE.LinearFilter;
+  const pl=new THREE.Sprite(new THREE.SpriteMaterial({map:ptex,transparent:true,opacity:0.92,depthTest:false}));
+  pl.scale.set(5.5,5.5*(80/256),1);
+  pl.renderOrder=6;  // above all fills and lines
+  pl.position.set(pa.x+pa.w/2,2.2,pa.z+pa.d/2);
+  S.add(pl);
+}
+const WF=0xE4E9F0,WE=0xC8D0DC;
+// Walkway fills: y=0.020, opacity=0.65
+// Bay fills: y=0.024 — 4 units above walkway fills (both transparent depthWrite:false)
+// Different Y = deterministic sort order — Three.js always sorts bay fills
+// "above" walkway fills. No sort-order flip during orbit = no crossing flicker.
+// Bay fill opacity boosted 0.65→0.72: DoubleSide fix halved the effective opacity,
+// this brings the visual weight back to the intended level.
+Object.values(D.wk).forEach(w=>{(w.cr||[]).forEach(c=>{const h=2;
+  const wf=fR(c.xS,c.z-h/2,c.xE-c.xS,h,0.020,WF,0.65);wf.material.depthWrite=false;wf.renderOrder=3;S.add(wf);
+  S.add(ln(c.xS,c.z-h/2,c.xE,c.z-h/2,.09,WE,.65));
+  S.add(ln(c.xS,c.z+h/2,c.xE,c.z+h/2,.09,WE,.65))})});
+const RC=0x4060a0;
+// Row lines: renderOrder:4 (render AFTER bay fills at renderOrder:3).
+// Previously at default renderOrder:0 — row lines wrote depth at y=0.06,
+// then bay fills at y=0.020 failed depth test at those pixels, leaving
+// hairline gaps that shimmered during orbit. Now: fills render first (ro:3),
+// then lines render on top (ro:4). No depth conflict, lines appear correctly.
+D.rows.forEach(r=>{RM.set(r.id,r);const len=r.zE-r.zS;
+  const bf=fR(r.x-HG,r.zS,D.rg,len,0.024,WF,0.72);bf.material.depthWrite=false;bf.renderOrder=3;S.add(bf);
+  [ln(r.x-HG,r.zS,r.x-HG,r.zE,.06,RC,.65),ln(r.x+HG,r.zS,r.x+HG,r.zE,.06,RC,.65),ln(r.x-HG,r.zS,r.x+HG,r.zS,.06,RC,.4),ln(r.x-HG,r.zE,r.x+HG,r.zE,.06,RC,.4)].forEach(l=>{l.renderOrder=4;S.add(l)});
+  S.add(mkRowLbl(String(r.n),r.x,r.zE-1.5,false));if(len>7)S.add(mkRowLbl(String(r.n),r.x,r.zS+1.5,true))});
+
+// ──────────────────────────────────────────────────────────────
+// BAY / CHASE DEMARCATION
+// Vertical glass-panel dividers at aisle midpoints between row pairs.
+// One divider per aisle — derived from row X positions and building Z extents.
+// Building B: rows 7 (x=-30), 8 (x=-20) — aisle at x=-25, z=-42→-12
+// Building A: rows 9→10, 10→11, 11→12, 12→13 — aisles at x=1,11,21,31
+// Building C: rows 5 (x=-70), 6b (x=-58) — aisle at x=-64, z=6→24
+// ──────────────────────────────────────────────────────────────
+mkBayDiv(-25,-42,-12);   // Bldg B — between rows 7 & 8
+mkBayDiv(  1,-42,-12);   // Bldg A — between rows 9 & 10
+mkBayDiv( 11,-42,-12);   // Bldg A — between rows 10 & 11
+mkBayDiv( 21,-42,-12);   // Bldg A — between rows 11 & 12
+mkBayDiv( 31,-42,-12);   // Bldg A — between rows 12 & 13
+mkBayDiv(-64,  6, 24);   // Bldg C — between rows 5 & 6b
+
+let selMesh=null;
+function mkToolMat(vc,lerp){const fc=new THREE.Color(vc.face).lerp(WHITE,lerp);const tc=new THREE.Color(vc.top).lerp(WHITE,lerp);const sc=new THREE.Color(vc.shadow).lerp(WHITE,lerp);return[new THREE.MeshStandardMaterial({color:fc,roughness:.4,metalness:.0}),new THREE.MeshStandardMaterial({color:fc,roughness:.4,metalness:.0}),new THREE.MeshStandardMaterial({color:tc,roughness:.3,metalness:.0}),new THREE.MeshStandardMaterial({color:sc,roughness:.5,metalness:.0}),new THREE.MeshStandardMaterial({color:fc,roughness:.4,metalness:.0}),new THREE.MeshStandardMaterial({color:sc,roughness:.5,metalness:.0})]}
+
+D.tools.forEach(t=>{
+  const row=RM.get(t.ri);if(!row)return;
+  const tz=row.zS+t.p*(row.zE-row.zS);
+  const edgeOff=HG+D.ts.w/2+0.1;
+  const tx=row.x+(t.s==='left'?-edgeOff:edgeOff);
+  const vc=VENDOR_COLORS[t.v]||VENDOR_COLORS.a;
+  const tier=getToolRollupTier(t.id);
+  const tint=TIER_TINTS[tier]||0;
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(D.ts.w,D.ts.h,D.ts.d),mkToolMat(vc,tint));
+  mesh.position.set(tx,D.ts.h/2,tz);mesh.castShadow=true;mesh.receiveShadow=true;
+  mesh.userData.vc=vc;mesh.userData.tier=tier;
+  mesh.userData.baseY=D.ts.h/2;   // resting Y — for lift animation
+  mesh.userData.liftActive=false;  // true while this tool is selected
+  S.add(mesh);TM.push(mesh);
+  TD.set(mesh,{id:t.id,vendor:D.vn[t.v]||t.v,bld:row.b,row:row.n,side:t.s,v:t.v,tier});
+  const il=sp(t.id.replace('PCVD-',''),{fs:22,sc:2.2,op:.5});il.position.set(tx,D.ts.h+1,tz);S.add(il);
+});
+
+// ============================================================
+// SELECTION RINGS — dual ring: outer boundary + inner focus target
+// ─────────────────────────────────────────────────────────────
+// Both rings live at floor level. Opacity is lerped in the
+// render loop. The inner ring fades at 60% of the outer.
+// No rings are visible until a tool is selected.
+// ============================================================
+
+// Outer ring — spatial boundary indicator
+const selRingMat=new THREE.MeshBasicMaterial({
+  color:0x0078D4,transparent:true,opacity:0,depthWrite:false
+});
+const selRing=new THREE.Mesh(
+  new THREE.TorusGeometry(1.72,0.055,8,52),selRingMat
+);
+selRing.rotation.x=-Math.PI/2;selRing.position.y=0.05;selRing.renderOrder=10;
+S.add(selRing);
+
+// Inner ring — tighter center focus
+const selRingInMat=new THREE.MeshBasicMaterial({
+  color:0x0078D4,transparent:true,opacity:0,depthWrite:false
+});
+const selRingIn=new THREE.Mesh(
+  new THREE.TorusGeometry(1.10,0.04,8,52),selRingInMat
+);
+selRingIn.rotation.x=-Math.PI/2;selRingIn.position.y=0.05;selRingIn.renderOrder=10;
+S.add(selRingIn);
+
+let ringOpacityCurrent=0;  // animated current opacity
+let ringOpacityTarget  =0;  // 0=hidden, 1=full
+
+// ============================================================
+// ORBIT CAMERA
+// ─────────────────────────────────────────────────────────────
+// theta=+1.45: camera sits south, looking north. B29 left,
+// B90 right, B19 lower-left. tgt=(-18,0,-12) is shifted
+// left and north from v19 (-5,0,-22) to bring B19's far
+// corner within the horizontal frustum.
+// r=128: wider view — calculated so angle from look-center
+// to B19 far corner (-76,0,26) is ~31°, within the ~33°
+// horizontal half-FOV at the typical viewport aspect ratio.
+// ============================================================
+const HOME={
+  tgt:new THREE.Vector3(-23.45,0,-8),
+  phi:0.65, theta:1.45, r:105
+};
+
+const O={
+  tgt:HOME.tgt.clone(), phi:0.14, theta:HOME.theta, r:132,
+  minR:18, maxR:130,
+  drag:false, pan:false, lx:0, ly:0,
+  idle:0, idleD:12000, idleS:0.00008,
+  flyActive:false,
+  flyT:0, flyDur:1400,  // startup sweep duration; flyToTool resets to 620
+  flyFrom:{tgt:null,phi:0,r:0,theta:0},
+  flyGoal:{tgt:null,phi:0.65,r:42,theta:HOME.theta},
+};
+
+function easeIOC(t){return t<.5?4*t*t*t:(t-1)*(2*t-2)*(2*t-2)+1}
+
+function flyToTool(mesh){
+  const px=mesh.position.x,pz=mesh.position.z;
+  O.flyFrom={tgt:O.tgt.clone(),phi:O.phi,r:O.r,theta:O.theta};
+  O.flyGoal={tgt:new THREE.Vector3(px,0,pz),phi:HOME.phi,r:42,theta:O.theta};
+  O.flyDur=620;
+  O.flyT=0;
+  O.flyActive=true;
+  O.idle=0;
+  clearReturnHome(); // tool selected — cancel any pending return-home
+}
+
+// ── Return-home timer ─────────────────────────────────────────
+// After deselecting a tool by clicking empty floor, wait 15s of
+// inactivity before flying back to the HOME overview.
+// Any user interaction (drag, pan, zoom, tool click) cancels it.
+// The back button and reset always fly home immediately.
+let _returnTimer=null;
+function scheduleReturnHome(){
+  clearReturnHome();
+  _returnTimer=setTimeout(()=>{
+    _returnTimer=null;
+    O.flyFrom={tgt:O.tgt.clone(),phi:O.phi,r:O.r,theta:O.theta};
+    O.flyGoal={tgt:HOME.tgt.clone(),phi:HOME.phi,r:HOME.r,theta:HOME.theta};
+    O.flyDur=900; O.flyT=0; O.flyActive=true;
+  },15000);
+}
+function clearReturnHome(){
+  if(_returnTimer){clearTimeout(_returnTimer);_returnTimer=null;}
+}
+function uc(){cam.position.set(O.tgt.x+O.r*Math.sin(O.phi)*Math.cos(O.theta),O.tgt.y+O.r*Math.cos(O.phi),O.tgt.z+O.r*Math.sin(O.phi)*Math.sin(O.theta));cam.lookAt(O.tgt)}
+uc();
+
+// Startup reveal — 1.4s ease from overhead (phi=0.14) to HOME working angle.
+O.flyFrom={tgt:HOME.tgt.clone(),phi:0.14,r:155,theta:HOME.theta};
+O.flyGoal={tgt:HOME.tgt.clone(),phi:HOME.phi,r:HOME.r,theta:HOME.theta};
+O.flyT=0; O.flyActive=true;
+
+cvEl.addEventListener('mousedown',e=>{
+  if(e.button===0) O.drag=true;
+  if(e.button===2) O.pan=true;
+  O.lx=e.clientX;O.ly=e.clientY;
+  O.idle=0;
+  O.flyActive=false;   // cancel any in-progress fly-to
+  clearReturnHome();   // cancel deferred return-home on any interaction
+});
+cvEl.addEventListener('mousemove',e=>{
+  const dx=e.clientX-O.lx,dy=e.clientY-O.ly;O.lx=e.clientX;O.ly=e.clientY;
+  // drag: 0.007 — responsive and natural
+  if(O.drag){O.theta-=dx*.007;O.phi=Math.max(.10,Math.min(1.25,O.phi-dy*.007));O.idle=0}
+  if(O.pan){const s=O.r*.001,rv=new THREE.Vector3(),up=new THREE.Vector3(0,1,0);cam.getWorldDirection(rv);rv.cross(up).normalize();const fv=new THREE.Vector3();fv.crossVectors(rv,up).normalize();O.tgt.addScaledVector(rv,-dx*s);O.tgt.addScaledVector(fv,dy*s);O.idle=0}
+});
+addEventListener('mouseup',()=>{O.drag=false;O.pan=false});
+cvEl.addEventListener('contextmenu',e=>e.preventDefault());
+// zoom: 0.055 (was 0.08) — smoother, less likely to overshoot
+cvEl.addEventListener('wheel',e=>{e.preventDefault();O.flyActive=false;clearReturnHome();O.r=Math.max(O.minR,Math.min(O.maxR,O.r+e.deltaY*.055));O.idle=0},{passive:false});
+// Reset: smooth fly-back to HOME, not teleport
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  O.flyFrom={tgt:O.tgt.clone(),phi:O.phi,r:O.r,theta:O.theta};
+  O.flyGoal={tgt:HOME.tgt.clone(),phi:HOME.phi,r:HOME.r,theta:HOME.theta};
+  O.flyDur=900; O.flyT=0; O.flyActive=true; O.idle=0;
+});
+
+// ============================================================
+// RAYCASTER
+// ============================================================
+const rc=new THREE.Raycaster(),mv=new THREE.Vector2();
+const tip=document.getElementById('tip');
+let hv=null;
+function canvasNDC(cx,cy){const rect=cvEl.getBoundingClientRect();return{x:((cx-rect.left)/rect.width)*2-1,y:-((cy-rect.top)/rect.height)*2+1}}
+function applyMats(mesh,lerp,selected){
+  if(selected){mesh.material.forEach(m=>m.color.set(SEL_COLOR))}
+  else{const mats=mkToolMat(mesh.userData.vc,lerp);mesh.material.forEach((m,i)=>m.color.copy(mats[i].color));mats.forEach(m=>m.dispose())}
+}
+
+cvEl.addEventListener('click',e=>{
+  const n=canvasNDC(e.clientX,e.clientY);mv.x=n.x;mv.y=n.y;
+  rc.setFromCamera(mv,cam);
+  const hits=rc.intersectObjects(TM);
+  if(hits.length){
+    const d=TD.get(hits[0].object);
+    // Route through syncThreeSelection → ring + fly-to + mesh color
+    syncThreeSelection(d.id);
+    selectToolFromMap(d.id,d);
+  } else {
+    // Clicked empty space — behavior depends on current state:
+    //   Tool was selected (zoomed in) → fly home immediately (done with tool)
+    //   No tool selected (free-roaming overview) → 15s timer before fly home
+    const wasToolSelected = uiSelectedTool !== null;
+    syncThreeSelection(null);
+    setRpState('a');
+    uiSelectedTool=null;
+    uiSelectedSub=null;
+    renderLeftPanel();
+    renderIdleQueue();
+    if(wasToolSelected){
+      // Came from a zoomed-in tool — return to overview now
+      clearReturnHome();
+      O.flyFrom={tgt:O.tgt.clone(),phi:O.phi,r:O.r,theta:O.theta};
+      O.flyGoal={tgt:HOME.tgt.clone(),phi:HOME.phi,r:HOME.r,theta:HOME.theta};
+      O.flyDur=700; O.flyT=0; O.flyActive=true;
+    } else {
+      // Already in overview / free-roaming — give 15s before returning
+      scheduleReturnHome();
+    }
+  }
+});
+
+cvEl.addEventListener('mousemove',e=>{
+  const n=canvasNDC(e.clientX,e.clientY);mv.x=n.x;mv.y=n.y;
+  rc.setFromCamera(mv,cam);
+  const hits=rc.intersectObjects(TM);
+  // Restore previous hover (skip if it is the selected mesh)
+  if(hv&&hv!==selMesh){applyMats(hv,TIER_TINTS[hv.userData.tier]||0,false)}
+  hv=null;
+  if(hits.length){
+    hv=hits[0].object;
+    if(hv!==selMesh) applyMats(hv,.2,false);
+    const d=TD.get(hv);
+    const pms=getPMsForTool(d.id);
+    const pmLine=pms.length?`${pms[0].pmType} — ${pmDayLabel(pms[0].daysUntilDue)}`:'No PM in 2-week window';
+    tip.innerHTML=`<b>${d.id}</b><span>${d.vendor} · Bldg ${d.bld} · Row ${d.row}</span><span>${pmLine}</span>`;
+    tip.style.display='block';tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px';
+  } else {tip.style.display='none'}
+});
+
+// ============================================================
+// RENDER LOOP
+// ============================================================
+let lt=performance.now();
+(function loop(now){
+  requestAnimationFrame(loop);
+  const dt=now-lt; lt=now;
+
+  // Fly-to animation
+  if(O.flyActive){
+    O.flyT=Math.min(1,O.flyT+dt/O.flyDur);
+    const e=easeIOC(O.flyT);
+    O.tgt.lerpVectors(O.flyFrom.tgt,O.flyGoal.tgt,e);
+    O.phi=O.flyFrom.phi+(O.flyGoal.phi-O.flyFrom.phi)*e;
+    O.r  =O.flyFrom.r  +(O.flyGoal.r  -O.flyFrom.r  )*e;
+    // Theta: always take the shortest angular path (avoids 360° wraparound snaps)
+    let dTh=O.flyGoal.theta-O.flyFrom.theta;
+    while(dTh> Math.PI)dTh-=2*Math.PI;
+    while(dTh<-Math.PI)dTh+=2*Math.PI;
+    O.theta=O.flyFrom.theta+dTh*e;
+    if(O.flyT>=1) O.flyActive=false;
+  } else {
+    O.idle+=dt;
+    if(O.idle>O.idleD&&!O.drag&&!O.pan) O.theta+=O.idleS;
+  }
+
+  // Tool lift tween — all meshes, trivial cost (24 items, pure math)
+  const LIFT=0.20;
+  TM.forEach(m=>{
+    const tY=m.userData.liftActive?m.userData.baseY+LIFT:m.userData.baseY;
+    const diff=tY-m.position.y;
+    if(Math.abs(diff)>0.001) m.position.y+=diff*Math.min(1,dt*0.009);
+  });
+
+  // Dual ring opacity lerp + pulse
+  const lerpF=Math.min(1,dt*0.008);
+  ringOpacityCurrent+=(ringOpacityTarget-ringOpacityCurrent)*lerpF;
+  const pulse=ringOpacityTarget>0&&ringOpacityCurrent>0.4
+    ? 0.72+0.28*Math.sin(now*0.0028)
+    : 1;
+  selRingMat.opacity  =ringOpacityCurrent*pulse;
+  selRingInMat.opacity=ringOpacityCurrent*pulse*0.55;
+
+  uc();
+  R.render(S,cam);
+})(performance.now());
+
+const mapContainer=document.getElementById('map-container');
+function updateCanvas(){const w=mapContainer.offsetWidth,h=mapContainer.offsetHeight;if(w<1||h<1)return;R.setSize(w,h,true);cam.aspect=w/h;cam.updateProjectionMatrix()}
+new ResizeObserver(updateCanvas).observe(mapContainer);
+
+// ============================================================
+// UI STATE
+// ─────────────────────────────────────────────────────────────
+// uiSelectedTool   string|null    — selected tool ID
+// uiSelectedSub    {frame,chamber}|null — selected sub-level
+// uiExpandedTools  Set<string>    — which tools have open accordion
+// uiTierFilter     string         — 'all'|'critical'|'priority'|'upcoming'
+// uiSearch         string
+// ============================================================
+let uiSelectedTool  = null;
+let uiSelectedSub   = null;
+let uiExpandedTools = new Set();
+let uiTierFilter    = 'all';
+let uiSearch        = '';
+let uiDrawerSearch  = '';
+
+// ============================================================
+// RIGHT PANEL STATE SWITCHER
+// ============================================================
+function setRpState(state){
+  document.querySelectorAll('.rp-state').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`rp-state-${state}`).classList.add('active');
+}
+
+// ============================================================
+// PM STRIP — computed from PM_FEED
+// ============================================================
+function renderPmStrip(){
+  const crit=PM_FEED.filter(p=>pmTier(p.daysUntilDue)==='critical').length;
+  const pri =PM_FEED.filter(p=>pmTier(p.daysUntilDue)==='priority').length;
+  const up  =PM_FEED.filter(p=>pmTier(p.daysUntilDue)==='upcoming').length;
+  document.getElementById('tc-crit').textContent  = crit;
+  document.getElementById('tc-pri').textContent   = pri;
+  document.getElementById('tc-up').textContent    = up;
+  document.getElementById('tc-total').textContent = PM_FEED.length;
+}
+
+// ============================================================
+// RIGHT PANEL — STATE A: idle shift queue
+// ============================================================
+function renderIdleQueue(){
+  const queue=document.getElementById('rp-pm-queue');
+  function tier_section(tierKey,label){
+    const entries=PM_FEED.filter(p=>pmTier(p.daysUntilDue)===tierKey);
+    if(!entries.length) return '';
+    const rows=entries.map(e=>`
+      <div class="pm-entry ${tierKey}" data-id="${e.id}" data-frame="${e.frame||''}" data-chamber="${e.chamber||''}">
+        <div class="pm-entry-day">
+          <div class="pm-day-num">${Math.abs(e.daysUntilDue)}</div>
+          <div class="pm-day-lbl">${e.daysUntilDue<=0?'overdue':'days'}</div>
+        </div>
+        <div class="pm-entry-body">
+          <div class="pm-entry-id">${e.id}</div>
+          <div class="pm-entry-level">${e.level==='tool'?'Tool-level':e.level==='frame'?`${e.frame}`:`${e.frame} · ${e.chamber}`}</div>
+          <div class="pm-entry-type">${e.pmType}</div>
+          <div class="pm-entry-date">${e.dueDate}</div>
+        </div>
+        <div class="pm-entry-chev">›</div>
+      </div>`).join('');
+    return `
+      <div class="pm-tier-hd tier-${tierKey}">
+        <div class="pm-tier-bar"></div>
+        <div class="pm-tier-label">${label}</div>
+      </div>${rows}`;
+  }
+  let html=tier_section('critical','Critical')+tier_section('priority','Priority')+tier_section('upcoming','Upcoming');
+  if(!html) html=`<div style="padding:20px 15px;font-size:15px;color:var(--txt-muted);text-align:center">No PM actions in the 2-week window.</div>`;
+  queue.innerHTML=html;
+
+  // Clicking an entry: select that tool and expand its hierarchy
+  queue.querySelectorAll('.pm-entry[data-id]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const id=el.dataset.id;
+      const frame=el.dataset.frame||null;
+      const chamber=el.dataset.chamber||null;
+      const toolEntry=D.tools.find(t=>t.id===id);
+      if(!toolEntry) return;
+      const row=RM.get(toolEntry.ri);if(!row) return;
+      const data={id,vendor:D.vn[toolEntry.v],bld:row.b,row:row.n,side:toolEntry.s,v:toolEntry.v};
+      syncThreeSelection(id);
+      if(frame||chamber){
+        selectTool(id,data);
+        selectSub(id,frame,chamber);
+      } else {
+        selectTool(id,data);
+      }
+    });
+  });
+}
+
+// ============================================================
+// RIGHT PANEL — STATE B/C: tool selected
+// ============================================================
+function renderToolPanel(toolId,data){
+  const scroll=document.getElementById('rp-bc-scroll');
+  const pms=getPMsForTool(toolId);
+  const meta=getToolMeta(toolId);
+  const refs=getRefs(toolId,null,null);
+  const typeIco={photo:'IMG',sop:'SOP',jha:'JHA',ref:'REF'};
+  const typeCls={photo:'ico-photo',sop:'ico-sop',jha:'ico-jha',ref:'ico-ref'};
+
+  // PM STATUS SECTION
+  let pmSection='';
+  if(pms.length){
+    const cards=pms.map(e=>{
+      const tier=pmTier(e.daysUntilDue);
+      const lvlText=e.level==='tool'?'Tool-level':e.level==='frame'?`${e.frame}`:`${e.frame} › ${e.chamber}`;
+      return `<div class="pm-card ${tier}" style="cursor:pointer" data-frame="${e.frame||''}" data-chamber="${e.chamber||''}">
+        <div class="pm-card-top">
+          <div class="pm-card-type">${e.pmType}</div>
+          <div class="pm-card-urg">${pmTierLabel(tier)}</div>
+        </div>
+        <div class="pm-card-level">${lvlText}</div>
+        <div class="pm-card-days">${Math.abs(e.daysUntilDue)}<span style="font-size:15px;font-weight:400;margin-left:4px">${e.daysUntilDue<=0?'days overdue':'days — '+pmDayLabel(e.daysUntilDue)}</span></div>
+        <div class="pm-card-date">Due: ${e.dueDate}</div>
+      </div>`;
+    }).join('');
+    pmSection=`<div class="pane-sec">
+      <div class="pane-sec-hd">PM Actions — next 14 days</div>
+      <div style="font-size:14px;color:var(--txt-muted);margin-bottom:10px">Click any item to open execution context</div>
+      ${cards}
+    </div>`;
+  } else {
+    pmSection=`<div class="pane-sec">
+      <div class="pane-sec-hd">PM Schedule — next 14 days</div>
+      <div class="pm-clear-block">
+        <div class="pm-clear-ico">✓</div>
+        <div>
+          <div class="pm-clear-label">No PM due in next 14 days</div>
+          <div class="pm-clear-sub">Nothing scheduled in the current 2-week window</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // EQUIPMENT SECTION
+  const equipSection=`<div class="pane-sec">
+    <div class="pane-sec-hd">Equipment</div>
+    <div class="ws-block">
+      <div class="ws-icon">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <rect x="1" y="2" width="13" height="9" rx="1.5" stroke="#0078D4" stroke-width="1.2"/>
+          <line x1="5.5" y1="11" x2="5.5" y2="14" stroke="#0078D4" stroke-width="1.2"/>
+          <line x1="9.5" y1="11" x2="9.5" y2="14" stroke="#0078D4" stroke-width="1.2"/>
+          <line x1="3.5" y1="14" x2="11.5" y2="14" stroke="#0078D4" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div><div class="ws-lbl">Workstation</div><div class="ws-name">${meta.workstation}</div></div>
+    </div>
+    <div class="meta-row"><span class="meta-lbl">Building</span><span class="meta-val">${BLDG_LABELS[data.bld]||data.bld}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Row / Side</span><span class="meta-val">Row ${data.row} · ${data.side}</span></div>
+    <div class="meta-row"><span class="meta-lbl">Vendor</span><span class="meta-val">${data.vendor}</span></div>
+  </div>`;
+
+  // OWNER CONTACTS
+  const contactSection=`<div class="pane-sec">
+    <div class="pane-sec-hd">Equipment Owner</div>
+    ${meta.owners.map(o=>`
+      <div class="contact-row">
+        <div class="contact-ico">👤</div>
+        <div style="min-width:0">
+          <div class="contact-name">${o.name}</div>
+          <div class="contact-detail">${o.email?`<a href="mailto:${o.email}">${o.email}</a>`:''} ${o.phone?`· ${o.phone}`:''}</div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+
+  // REFERENCES
+  const refSection=`<div class="pane-sec">
+    <div class="pane-sec-hd">References &amp; Procedures</div>
+    ${refs.map(r=>`
+      <a href="${r.href}" class="doc-link" target="_blank" rel="noopener">
+        <div class="doc-ico ${typeCls[r.type]||'ico-ref'}">${typeIco[r.type]||'DOC'}</div>
+        <div style="min-width:0">
+          <div class="doc-link-title">${r.label}</div>
+          <div class="doc-link-src">Confluence</div>
+        </div>
+      </a>`).join('')}
+  </div>`;
+
+  scroll.innerHTML=pmSection+equipSection+contactSection+refSection;
+
+  // Wire PM card clicks → selectSub (drills to frame/chamber execution state)
+  scroll.querySelectorAll('.pm-card[data-frame]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const frame=el.dataset.frame||null;
+      const chamber=el.dataset.chamber||null;
+      if(frame||chamber) selectSub(toolId,frame,chamber);
+    });
+  });
+}
+
+// ============================================================
+// RIGHT PANEL — STATE D: frame/chamber selected
+// ============================================================
+function renderSubPanel(toolId,frame,chamber){
+  const scroll=document.getElementById('rp-d-scroll');
+  const pms=chamber
+    ? getPMsForChamber(toolId,frame,chamber)
+    : getPMsForFrame(toolId,frame);
+  const meta=getToolMeta(toolId);
+  const refs=getRefs(toolId,frame,chamber);
+  const typeIco={photo:'IMG',sop:'SOP',jha:'JHA',ref:'REF'};
+  const typeCls={photo:'ico-photo',sop:'ico-sop',jha:'ico-jha',ref:'ico-ref'};
+  const targetLabel=chamber?`${frame} › ${chamber}`:frame;
+
+  // PM DETAIL — prominent
+  let pmSection='';
+  if(pms.length){
+    const cards=pms.map(e=>{
+      const tier=pmTier(e.daysUntilDue);
+      return `<div class="pm-card ${tier}" style="margin-bottom:8px">
+        <div class="pm-card-top">
+          <div class="pm-card-type">${e.pmType}</div>
+          <div class="pm-card-urg">${pmTierLabel(tier)}</div>
+        </div>
+        <div class="pm-card-days">${Math.abs(e.daysUntilDue)}<span style="font-size:15px;font-weight:400;margin-left:4px">${e.daysUntilDue<=0?'days overdue':pmDayLabel(e.daysUntilDue)}</span></div>
+        <div class="pm-card-date">Due: ${e.dueDate}</div>
+      </div>`;
+    }).join('');
+    pmSection=`<div class="pane-sec"><div class="pane-sec-hd">PM Action</div>${cards}</div>`;
+  }
+
+  // CONFLUENCE CTA — primary action for execution context
+  const cta=`<div class="pane-sec">
+    <div class="pane-sec-hd">Procedure</div>
+    <a href="#" class="confluence-cta" target="_blank" rel="noopener">
+      <div class="confluence-cta-ico">↗</div>
+      <div class="confluence-cta-body">
+        <div class="confluence-cta-label">Open PM Procedure in Confluence</div>
+        <div class="confluence-cta-sub">${targetLabel} · ${meta.workstation}</div>
+      </div>
+    </a>
+    ${refs.filter(r=>r.type==='photo').map(r=>`
+      <a href="${r.href}" class="doc-link" target="_blank" rel="noopener">
+        <div class="doc-ico ico-photo">IMG</div>
+        <div style="min-width:0"><div class="doc-link-title">${r.label}</div><div class="doc-link-src">Confluence</div></div>
+      </a>`).join('')}
+    ${refs.filter(r=>r.type==='jha').map(r=>`
+      <a href="${r.href}" class="doc-link" target="_blank" rel="noopener">
+        <div class="doc-ico ico-jha">JHA</div>
+        <div style="min-width:0"><div class="doc-link-title">${r.label}</div><div class="doc-link-src">Confluence</div></div>
+      </a>`).join('')}
+  </div>`;
+
+  // CONTACTS (always visible)
+  const contactSection=`<div class="pane-sec">
+    <div class="pane-sec-hd">Equipment Owner</div>
+    ${meta.owners.map(o=>`
+      <div class="contact-row">
+        <div class="contact-ico">👤</div>
+        <div style="min-width:0">
+          <div class="contact-name">${o.name}</div>
+          <div class="contact-detail">${o.email?`<a href="mailto:${o.email}">${o.email}</a>`:''} ${o.phone?`· ${o.phone}`:''}</div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+
+  scroll.innerHTML=pmSection+cta+contactSection;
+}
+
+// ============================================================
+// LEFT PANEL — urgency-sorted flat list with inline accordion
+// ============================================================
+function renderLeftPanel(){
+  const list=document.getElementById('tool-list');
+  const q=uiSearch.toLowerCase();
+
+  // Filter and sort
+  let rows=D.tools.filter(t=>{
+    const row=RM.get(t.ri);if(!row) return false;
+    if(q&&!t.id.toLowerCase().includes(q)) return false;
+    const tier=getToolRollupTier(t.id);
+    if(uiTierFilter!=='all'&&tier!==uiTierFilter) return false;
+    return true;
+  });
+
+  const tierOrd=t=>pmTierOrder(getToolRollupTier(t.id));
+  rows.sort((a,b)=>tierOrd(a)-tierOrd(b)||(a.id>b.id?1:-1));
+
+  if(!rows.length){
+    list.innerHTML=`<div style="padding:20px 13px;font-size:15px;color:var(--txt-muted);text-align:center">No tools match filter.</div>`;
+    return;
+  }
+
+  const html=rows.map(t=>{
+    const row=RM.get(t.ri);
+    const tier=getToolRollupTier(t.id);
+    const pms=getPMsForTool(t.id);
+    const isSelTool=t.id===uiSelectedTool;
+    const isExpanded=uiExpandedTools.has(t.id);
+    const meta=getToolMeta(t.id);
+
+    // Badge: T-minus day or "Clear"
+    let badgeText, badgeClass;
+    if(tier==='clear'){badgeText='Clear';badgeClass='clear'}
+    else{const top=pms[0];badgeText=pmDayLabel(top.daysUntilDue);badgeClass=tier}
+
+    // Build accordion if expanded
+    let accordion='';
+    if(isExpanded){
+      const frameSections=meta.frames.map(f=>{
+        const frameTier=getFrameRollupTier(t.id,f.label);
+        const framePMs=getPMsForFrame(t.id,f.label);
+        const isSelFrame=isSelTool&&uiSelectedSub&&uiSelectedSub.frame===f.label&&!uiSelectedSub.chamber;
+        const chamberRows=f.chambers.map(ch=>{
+          const chTier=getChamberTier(t.id,f.label,ch);
+          const chPMs=getPMsForChamber(t.id,f.label,ch);
+          const isSelCh=isSelTool&&uiSelectedSub&&uiSelectedSub.frame===f.label&&uiSelectedSub.chamber===ch;
+          const chBadge=chTier==='clear'?'':`<div class="ch-pm-badge ${chTier}">${pmDayLabel(chPMs[0].daysUntilDue)}</div>`;
+          return `<div class="chamber-row${isSelCh?' sel':''}" data-tool="${t.id}" data-frame="${f.label}" data-chamber="${ch}">
+            <div class="ch-dot"></div>
+            <div class="ch-label">${ch}</div>
+            ${chBadge}
+          </div>`;
+        }).join('');
+        return `
+          <div class="frame-row${isSelFrame?' sel':''}" data-tool="${t.id}" data-frame="${f.label}">
+            <div class="frame-icon"></div>
+            <div class="frame-label">${f.label}</div>
+            ${frameTier!=='clear'?`<div class="frame-dot ${frameTier}"></div>`:''}
+          </div>
+          ${chamberRows}`;
+      }).join('');
+      accordion=`<div class="tool-accordion open" data-tool="${t.id}">${frameSections}</div>`;
+    }
+
+    return `
+      <div class="tool-row${isSelTool?' sel':''}${isExpanded?' expanded':''}" data-id="${t.id}" data-v="${t.v}" data-bld="${row.b}" data-row="${row.n}" data-side="${t.s}">
+        <div class="t-vendor-bar ${t.v}"></div>
+        <div class="t-info">
+          <div class="t-id${isSelTool?' sel-id':''}">${t.id}</div>
+          <div class="t-loc">${BLDG_LABELS[row.b]||row.b} · Row ${row.n}</div>
+        </div>
+        <div class="t-right">
+          <div class="t-badge ${badgeClass}">${badgeText}</div>
+          <div class="t-chevron">›</div>
+        </div>
+      </div>
+      ${accordion}`;
+  }).join('');
+
+  list.innerHTML=html;
+
+  // Tool row clicks
+  list.querySelectorAll('.tool-row').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const id=el.dataset.id;
+      const data={id,vendor:D.vn[el.dataset.v],bld:el.dataset.bld,row:el.dataset.row,side:el.dataset.side,v:el.dataset.v};
+      syncThreeSelection(id);
+      selectTool(id,data);
+    });
+  });
+
+  // Frame row clicks
+  list.querySelectorAll('.frame-row').forEach(el=>{
+    el.addEventListener('click',e=>{
+      e.stopPropagation();
+      const toolId=el.dataset.tool;
+      const frame=el.dataset.frame;
+      selectSub(toolId,frame,null);
+    });
+  });
+
+  // Chamber row clicks
+  list.querySelectorAll('.chamber-row').forEach(el=>{
+    el.addEventListener('click',e=>{
+      e.stopPropagation();
+      const toolId=el.dataset.tool;
+      const frame=el.dataset.frame;
+      const chamber=el.dataset.chamber;
+      selectSub(toolId,frame,chamber);
+    });
+  });
+}
+
+// ============================================================
+// SELECTION ACTIONS
+// ============================================================
+
+// selectTool: map click or list tool-row click
+// → expands accordion, scrolls to row, populates right panel state B/C
+function selectTool(id,data){
+  uiSelectedTool=id;
+  uiSelectedSub=null;
+  uiExpandedTools.add(id); // always expand on selection
+
+  const meta=getToolMeta(id);
+  const vc={a:'vb-a',b:'vb-b',c:'vb-c'}[data.v]||'vb-a';
+  document.getElementById('rp-sel-id').textContent=id;
+  document.getElementById('rp-sel-meta').textContent=
+    `${D.vn[data.v]}  ·  ${BLDG_LABELS[data.bld]||data.bld}  ·  Row ${data.row}  ·  ${data.side}`;
+  document.getElementById('rp-badge-wrap').innerHTML=
+    `<div class="vendor-badge ${vc}">${data.vendor}</div>`;
+
+  renderLeftPanel();
+  renderToolPanel(id,data);
+  setRpState('bc');
+
+  // Scroll the left panel to the selected tool row
+  requestAnimationFrame(()=>{
+    const el=document.querySelector(`.tool-row[data-id="${id}"]`);
+    if(el) el.scrollIntoView({block:'nearest',behavior:'smooth'});
+  });
+}
+
+// selectTool from map: same as selectTool but also handles 3D sync
+function selectToolFromMap(id,data){
+  selectTool(id,data);
+}
+
+// selectSub: frame or chamber click
+// → populates right panel state D
+function selectSub(toolId,frame,chamber){
+  uiSelectedSub={frame,chamber};
+
+  // Update breadcrumb + header
+  const crumb=document.getElementById('rp-sub-breadcrumb');
+  const subId=document.getElementById('rp-sub-id');
+
+  if(chamber){
+    crumb.innerHTML=`<span>${toolId}</span><span class="bc-sep">›</span><span>${frame}</span><span class="bc-sep">›</span><span class="bc-active">${chamber}</span>`;
+    subId.textContent=`${frame} · ${chamber}`;
+  } else {
+    crumb.innerHTML=`<span>${toolId}</span><span class="bc-sep">›</span><span class="bc-active">${frame}</span>`;
+    subId.textContent=frame;
+  }
+
+  renderLeftPanel();
+  renderSubPanel(toolId,frame,chamber);
+  setRpState('d');
+}
+
+function syncThreeSelection(targetId){
+  // Deselect previous mesh — restore color, lower it, hide rings
+  if(selMesh){
+    applyMats(selMesh,TIER_TINTS[selMesh.userData.tier]||0,false);
+    selMesh.userData.selected=false;
+    selMesh.userData.liftActive=false;
+    selMesh=null;
+  }
+  ringOpacityTarget=0;
+
+  if(!targetId) return;
+
+  // Find target mesh, select it, lift it, position rings, fly-to
+  TM.forEach(mesh=>{
+    const d=TD.get(mesh);
+    if(d&&d.id===targetId){
+      selMesh=mesh;
+      selMesh.userData.selected=true;
+      selMesh.userData.liftActive=true;
+      applyMats(selMesh,0,true);
+      // Position both rings at floor level under the tool's XZ
+      const rx=mesh.position.x,rz=mesh.position.z;
+      selRing.position.set(rx,0.05,rz);
+      selRingIn.position.set(rx,0.05,rz);
+      ringOpacityTarget=1;
+      flyToTool(mesh);
+    }
+  });
+}
+
+// ============================================================
+// BACK BUTTONS
+// ============================================================
+document.getElementById('rp-sel-back').addEventListener('click',()=>{
+  syncThreeSelection(null);
+  uiSelectedTool=null;uiSelectedSub=null;
+  uiExpandedTools.clear();
+  renderLeftPanel();
+  renderIdleQueue();
+  setRpState('a');
+});
+document.getElementById('rp-sub-back').addEventListener('click',()=>{
+  uiSelectedSub=null;
+  if(uiSelectedTool){
+    const toolEntry=D.tools.find(t=>t.id===uiSelectedTool);
+    if(toolEntry){
+      const row=RM.get(toolEntry.ri);
+      if(row){
+        const data={id:uiSelectedTool,vendor:D.vn[toolEntry.v],bld:row.b,row:row.n,side:toolEntry.s,v:toolEntry.v};
+        renderLeftPanel();
+        renderToolPanel(uiSelectedTool,data);
+        setRpState('bc');
+        return;
+      }
+    }
+  }
+  setRpState('a');
+});
+
+// ============================================================
+// CONTROLS
+// ============================================================
+document.querySelectorAll('.tier-chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    uiTierFilter=chip.dataset.tier;
+    document.querySelectorAll('.tier-chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    renderLeftPanel();
+  });
+});
+// Strip tile clicks filter left panel
+document.querySelectorAll('.pm-tile').forEach(tile=>{
+  tile.addEventListener('click',()=>{
+    const tier=tile.dataset.tier||'all';
+    uiTierFilter=tier;
+    document.querySelectorAll('.tier-chip').forEach(c=>c.classList.toggle('active',c.dataset.tier===tier));
+    document.querySelectorAll('.pm-tile').forEach(t=>t.classList.remove('active-filter'));
+    tile.classList.add('active-filter');
+    renderLeftPanel();
+  });
+});
+
+document.getElementById('search-input').addEventListener('input',e=>{uiSearch=e.target.value;renderLeftPanel()});
+
+// ============================================================
+// DRAWER (standard mode)
+// ============================================================
+const drawer=document.getElementById('left-drawer');
+const backdrop=document.getElementById('drawer-backdrop');
+document.getElementById('nav-drawer-btn').addEventListener('click',()=>{drawer.classList.add('open');backdrop.classList.add('open');renderDrawerList()});
+document.getElementById('drawer-close-btn').addEventListener('click',()=>{drawer.classList.remove('open');backdrop.classList.remove('open')});
+backdrop.addEventListener('click',()=>{drawer.classList.remove('open');backdrop.classList.remove('open')});
+document.getElementById('drawer-search').addEventListener('input',e=>{uiDrawerSearch=e.target.value;renderDrawerList()});
+
+function renderDrawerList(){
+  const q=uiDrawerSearch.toLowerCase();
+  const drawerList=document.getElementById('drawer-tool-list');
+  let html='';
+  D.tools.forEach(t=>{
+    if(q&&!t.id.toLowerCase().includes(q)) return;
+    const row=RM.get(t.ri);if(!row) return;
+    const tier=getToolRollupTier(t.id);
+    const pms=getPMsForTool(t.id);
+    const badgeText=tier==='clear'?'Clear':pmDayLabel(pms[0].daysUntilDue);
+    const isSel=t.id===uiSelectedTool;
+    html+=`<div class="tool-row${isSel?' sel':''}" data-id="${t.id}" data-v="${t.v}" data-bld="${row.b}" data-row="${row.n}" data-side="${t.s}">
+      <div class="t-vendor-bar ${t.v}"></div>
+      <div class="t-info"><div class="t-id${isSel?' sel-id':''}">${t.id}</div><div class="t-loc">${BLDG_LABELS[row.b]||row.b} · Row ${row.n}</div></div>
+      <div class="t-badge ${tier}">${badgeText}</div>
+    </div>`;
+  });
+  if(!html) html=`<div style="padding:20px 13px;font-size:15px;color:var(--txt-muted)">No tools match.</div>`;
+  drawerList.innerHTML=html;
+  drawerList.querySelectorAll('.tool-row').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const id=el.dataset.id;
+      const data={id,vendor:D.vn[el.dataset.v],bld:el.dataset.bld,row:el.dataset.row,side:el.dataset.side,v:el.dataset.v};
+      syncThreeSelection(id);selectTool(id,data);
+      drawer.classList.remove('open');backdrop.classList.remove('open');
+    });
+  });
+}
+
+// ============================================================
+// CONSTRAINED MODE — PM list
+// ============================================================
+function renderPMOnlyList(){
+  const el=document.getElementById('pm-only-list');
+  const tiers=[
+    {label:'Critical',entries:PM_FEED.filter(p=>pmTier(p.daysUntilDue)==='critical'),cls:'critical'},
+    {label:'Priority', entries:PM_FEED.filter(p=>pmTier(p.daysUntilDue)==='priority'), cls:'priority'},
+    {label:'Upcoming', entries:PM_FEED.filter(p=>pmTier(p.daysUntilDue)==='upcoming'), cls:'upcoming'},
+  ];
+  let html='';
+  tiers.forEach(({label,entries,cls})=>{
+    if(!entries.length) return;
+    html+=`<div style="font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--t-${cls.startsWith('up')?'up':cls.startsWith('pri')?'pri':'crit'}-fg);margin:14px 0 8px">${label}</div>`;
+    entries.forEach(e=>{
+      html+=`<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-sub)">
+        <span style="font-size:22px;font-weight:700;min-width:38px;text-align:center;color:var(--t-${e.daysUntilDue<=0?'crit':e.daysUntilDue<=3?'pri':'up'}-fg)">${Math.abs(e.daysUntilDue)}</span>
+        <div>
+          <div style="font-size:16px;font-weight:600">${e.id}</div>
+          <div style="font-size:14px;color:var(--txt-muted)">${e.level==='tool'?'Tool':e.level==='frame'?e.frame:`${e.frame} › ${e.chamber}`}</div>
+          <div style="font-size:15px;color:var(--txt-secondary)">${e.pmType}</div>
+          <div style="font-size:14px;color:var(--txt-muted)">${e.dueDate}</div>
+        </div>
+      </div>`;
+    });
+  });
+  if(!html) html=`<div style="font-size:15px;color:var(--txt-muted);text-align:center;padding:24px 0">No PM actions in the 2-week window.</div>`;
+  el.innerHTML=html;
+}
+
+// ============================================================
+// INITIAL RENDER
+// ============================================================
+renderPmStrip();
+renderLeftPanel();
+renderIdleQueue();
+renderPMOnlyList();
+</script>
+</body>
+</html>
