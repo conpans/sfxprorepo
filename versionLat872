@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CVD Central — Fab Floor Map</title>
+<style>
+/* ================================================================
+   CVD CENTRAL — FAB FLOOR MAP
+   Tool location, details panel, and search.
+================================================================ */
+
+:root {
+–lp-w:    292px;
+–rp-w:    344px;
+–tb-h:     48px;
+
+–white:      #ffffff;
+–bg:         #F2F4F7;
+–bg-subtle:  #F8F9FB;
+–panel-bg:   #ffffff;
+–border:     #E2E8F0;
+–border-sub: #EDF1F7;
+–map-bg:     #EDEEF1;
+
+–txt-primary:   #1C2B4A;
+–txt-secondary: #5A6882;
+–txt-muted:     #8A9BB0;
+
+–accent:    #0078D4;
+–accent-lt: rgba(0,120,212,0.08);
+
+–v-prod: #1A6B35;   /* Production — deep green */
+–v-eng:  #5C4A9E;   /* Engineering — slate violet */
+
+–fs-base:    17px;
+–fs-sm:      16px;
+–fs-xs:      15px;
+–fs-label:   13px;
+–fs-heading: 18px;
+–fs-large:   22px;
+
+–r-sm: 4px;  –r: 6px;  –r-lg: 9px;
+–font: ‘Segoe UI’, system-ui, -apple-system, sans-serif;
+
+–shadow-l:  1px 0 8px rgba(0,0,0,0.05), 4px 0 20px rgba(0,0,0,0.03);
+–shadow-r: -1px 0 8px rgba(0,0,0,0.05),-4px 0 20px rgba(0,0,0,0.03);
+
+–page-bg:  #EDEBE9;
+–page-pad: 16px;
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+body{
+background:var(–page-bg);
+font-family:var(–font);
+font-size:var(–fs-base);
+color:var(–txt-primary);
+padding:var(–page-pad);
+display:flex;
+align-items:stretch;
+}
+button,input{font-family:var(–font)}
+a{color:var(–accent)}
+
+.webpart-host{width:100%;height:100%;display:flex;align-items:stretch}
+
+.app-shell{
+flex:1;
+position:relative;
+border-radius:16px;
+overflow:hidden;
+background:var(–white);
+border:1px solid rgba(0,0,0,0.09);
+box-shadow:0 1px 2px rgba(0,0,0,0.04),0 4px 10px rgba(0,0,0,0.06),0 12px 28px rgba(0,0,0,0.06);
+container-type:size;
+container-name:app;
+}
+
+/* ── APP GRID ── */
+#app-grid{
+display:grid;
+grid-template-rows:var(–tb-h) 1fr;
+width:100%;height:100%;
+}
+
+/* ── TOP BAR ── */
+#top-bar{
+display:flex;align-items:center;gap:10px;
+padding:0 14px;
+background:var(–white);
+border-bottom:1px solid var(–border);
+z-index:20;
+}
+#brand{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;color:var(–txt-primary);letter-spacing:-0.01em}
+#brand-icon{width:24px;height:24px;background:var(–accent);border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#tb-sep{width:1px;height:18px;background:var(–border);margin:0 2px}
+#tb-crumb{font-size:var(–fs-sm);color:var(–txt-secondary);display:flex;align-items:center;gap:5px}
+#tb-crumb .here{color:var(–txt-primary);font-weight:500}
+#tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+#btn-reset{font-size:var(–fs-xs);padding:4px 10px;border:1px solid var(–border);background:var(–white);color:var(–txt-secondary);border-radius:var(–r-sm);cursor:pointer}
+#btn-reset:hover{background:var(–bg)}
+#nav-drawer-btn{display:none;align-items:center;gap:5px;font-size:var(–fs-xs);padding:4px 10px;border:1px solid var(–border);background:var(–white);color:var(–txt-secondary);border-radius:var(–r-sm);cursor:pointer}
+
+/* ── BODY GRID ── */
+#body-grid{
+display:grid;
+grid-template-columns:var(–lp-w) 1fr var(–rp-w);
+min-height:0;overflow:hidden;
+}
+
+/* ── LEFT PANEL ── */
+#left-panel{
+display:flex;flex-direction:column;overflow:hidden;
+background:var(–panel-bg);
+border-right:1px solid var(–border);
+box-shadow:var(–shadow-l);
+z-index:10;
+}
+#lp-controls{
+flex-shrink:0;
+padding:11px 13px 10px;
+border-bottom:1px solid var(–border-sub);
+background:var(–panel-bg);
+}
+#lp-eyebrow{
+font-size:var(–fs-label);font-weight:700;letter-spacing:0.08em;
+text-transform:uppercase;color:var(–txt-muted);margin-bottom:8px;
+}
+#search-wrap{position:relative}
+#search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(–txt-muted);pointer-events:none}
+#search-input{
+width:100%;padding:7px 10px 7px 30px;
+border:1px solid var(–border);border-radius:var(–r-sm);
+font-size:var(–fs-base);background:var(–bg);color:var(–txt-primary);outline:none;
+transition:border-color 0.12s,box-shadow 0.12s;
+}
+#search-input:focus{border-color:var(–accent);box-shadow:0 0 0 2px var(–accent-lt);background:var(–white)}
+#search-input::placeholder{color:var(–txt-muted)}
+
+#lp-list-region{
+flex:1;display:flex;flex-direction:column;overflow:hidden;
+background:var(–bg-subtle);min-height:0;
+}
+#lp-list-label{
+flex-shrink:0;
+padding:7px 13px 4px;
+font-size:var(–fs-label);font-weight:700;letter-spacing:0.07em;text-transform:uppercase;
+color:var(–txt-muted);background:var(–bg-subtle);
+}
+#tool-list{flex:1;overflow-y:auto;padding-bottom:20px;min-height:0}
+#tool-list::-webkit-scrollbar{width:3px}
+#tool-list::-webkit-scrollbar-thumb{background:var(–border);border-radius:2px}
+
+/* Tool row */
+.tool-row{
+display:flex;align-items:center;padding:9px 13px;gap:9px;
+cursor:pointer;border-bottom:1px solid var(–border-sub);
+transition:background 0.07s;
+}
+.tool-row:hover{background:rgba(255,255,255,0.8)}
+.tool-row.sel{background:var(–accent-lt)}
+
+.t-vendor-bar{width:4px;align-self:stretch;border-radius:2px;flex-shrink:0}
+.t-vendor-bar.prod{background:var(–v-prod)}
+.t-vendor-bar.eng{background:var(–v-eng)}
+
+.t-info{flex:1;min-width:0}
+.t-id{font-size:var(–fs-base);font-weight:600;color:var(–txt-primary);line-height:1.3}
+.t-id.sel-id{color:var(–accent)}
+.t-loc{font-size:var(–fs-xs);color:var(–txt-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.t-chevron{font-size:15px;color:var(–txt-muted);transition:transform 0.18s;line-height:1;flex-shrink:0}
+.tool-row.expanded .t-chevron{transform:rotate(90deg)}
+
+/* Accordion */
+.tool-accordion{
+display:none;
+background:rgba(242,244,247,0.6);
+border-bottom:1px solid var(–border-sub);
+}
+.tool-accordion.open{display:block}
+
+.chamber-row{
+display:flex;align-items:center;gap:8px;
+padding:6px 13px 6px 28px;
+border-bottom:1px solid var(–border-sub);
+cursor:pointer;transition:background 0.07s;
+}
+.chamber-row:hover{background:rgba(255,255,255,0.7)}
+.chamber-row.sel{background:var(–accent-lt)}
+.chamber-row:last-child{border-bottom:none}
+
+.ch-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;border:1.5px solid var(–txt-muted)}
+.ch-label{font-size:var(–fs-sm);color:var(–txt-secondary);flex:1;min-width:0}
+.chamber-row.sel .ch-label{color:var(–accent);font-weight:600}
+
+/* Vendor legend footer */
+#lp-footer{
+flex-shrink:0;padding:7px 13px;border-top:1px solid var(–border-sub);
+background:var(–panel-bg);display:flex;align-items:center;gap:12px;
+}
+.lp-li{display:flex;align-items:center;gap:5px;font-size:var(–fs-xs);color:var(–txt-muted)}
+.lp-vbar{width:4px;height:12px;border-radius:2px;flex-shrink:0}
+.lp-vbar.prod{background:var(–v-prod)}.lp-vbar.eng{background:var(–v-eng)}
+
+/* ── MAP ── */
+#map-container{position:relative;overflow:hidden;background:var(–map-bg);min-width:0}
+#cv{display:block}
+
+/* ── RIGHT PANEL ── */
+#right-panel{
+display:flex;flex-direction:column;overflow:hidden;
+background:var(–panel-bg);
+border-left:1px solid var(–border);
+box-shadow:var(–shadow-r);
+z-index:10;
+}
+.rp-state{display:none;flex-direction:column;flex:1;overflow:hidden}
+.rp-state.active{display:flex}
+.rp-scroll{flex:1;overflow-y:auto;min-height:0;padding-bottom:20px}
+.rp-scroll::-webkit-scrollbar{width:3px}
+.rp-scroll::-webkit-scrollbar-thumb{background:var(–border);border-radius:2px}
+
+/* State A — idle */
+#rp-idle-body{
+flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+padding:32px 24px;text-align:center;gap:10px;
+}
+#rp-idle-body svg{color:var(–txt-muted);opacity:0.22;margin-bottom:6px}
+#rp-idle-body h3{font-size:var(–fs-heading);font-weight:600;color:var(–txt-secondary)}
+#rp-idle-body p{font-size:var(–fs-sm);color:var(–txt-muted);line-height:1.5;max-width:220px}
+
+/* State B — tool selected */
+#rp-sel-hd{
+flex-shrink:0;padding:13px 15px 11px;
+border-bottom:1px solid var(–border-sub);
+}
+.rp-back{
+display:flex;align-items:center;gap:4px;
+font-size:var(–fs-sm);color:var(–accent);cursor:pointer;
+margin-bottom:8px;width:fit-content;
+}
+.rp-back:hover{text-decoration:underline}
+.rp-tool-id{font-size:var(–fs-large);font-weight:700;letter-spacing:-0.02em;color:var(–txt-primary);margin-bottom:2px}
+.rp-tool-meta{font-size:var(–fs-sm);color:var(–txt-secondary);margin-bottom:8px}
+
+.vendor-badge{
+display:inline-flex;align-items:center;gap:5px;
+font-size:var(–fs-xs);font-weight:600;padding:3px 9px;border-radius:20px;
+}
+.vb-prod{background:rgba(26,107,53,0.09);color:var(–v-prod)}
+.vb-eng{background:rgba(92,74,158,0.09);color:var(–v-eng)}
+
+/* Pane sections */
+.pane-sec{padding:13px 15px;border-bottom:1px solid var(–border-sub)}
+.pane-sec:last-child{border-bottom:none}
+.pane-sec-hd{
+font-size:var(–fs-label);font-weight:700;letter-spacing:0.08em;
+text-transform:uppercase;color:var(–txt-muted);margin-bottom:10px;
+}
+
+/* Workstation block */
+.ws-block{
+display:flex;align-items:center;gap:10px;
+padding:10px 12px;background:var(–bg-subtle);
+border:1px solid var(–border);border-radius:var(–r);
+}
+.ws-icon{width:28px;height:28px;border-radius:var(–r-sm);background:var(–accent-lt);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ws-lbl{font-size:var(–fs-xs);color:var(–txt-muted);margin-bottom:1px}
+.ws-name{font-size:var(–fs-base);font-weight:600;color:var(–txt-primary);font-family:‘Cascadia Code’,‘Consolas’,monospace;letter-spacing:0.01em}
+
+/* Contact rows */
+.contact-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(–border-sub)}
+.contact-row:last-child{border-bottom:none}
+.contact-ico{width:28px;height:28px;border-radius:50%;background:var(–bg);border:1px solid var(–border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;color:var(–txt-muted)}
+.contact-name{font-size:var(–fs-base);font-weight:600;color:var(–txt-primary);margin-bottom:1px}
+.contact-detail{font-size:var(–fs-sm);color:var(–accent)}
+.contact-detail a{color:var(–accent);text-decoration:none}
+.contact-detail a:hover{text-decoration:underline}
+
+/* Link rows — reference docs */
+.link-list{display:flex;flex-direction:column}
+.link-row{
+display:flex;align-items:center;gap:10px;
+padding:9px 0;border-bottom:1px solid var(–border-sub);
+text-decoration:none;color:var(–txt-primary);transition:background 0.07s;
+cursor:pointer;
+}
+.link-row:last-child{border-bottom:none}
+.link-row:hover .link-title{color:var(–accent);text-decoration:underline}
+.link-ico{
+width:30px;height:30px;border-radius:var(–r-sm);
+display:flex;align-items:center;justify-content:center;
+flex-shrink:0;font-size:var(–fs-xs);font-weight:700;
+}
+.ico-sop{background:#EBF5E8;color:#1A5C1A}
+.ico-jha{background:var(–t-crit-bg,#FDE8E0);color:#B83000}
+.ico-ref{background:var(–bg);color:var(–txt-secondary);border:1px solid var(–border)}
+.ico-photo{background:#EBF0FB;color:#1C4080}
+.link-body{flex:1;min-width:0}
+.link-title{font-size:var(–fs-base);font-weight:500;color:var(–txt-primary)}
+.link-src{font-size:var(–fs-xs);color:var(–txt-muted);margin-top:1px}
+.link-chev{font-size:14px;color:var(–txt-muted);flex-shrink:0}
+
+.hier-frame{
+font-size:var(–fs-base);font-weight:500;color:var(–txt-secondary);
+padding:7px 0;
+border-bottom:1px solid var(–border-sub);
+display:flex;align-items:center;gap:7px;
+}
+.hier-frame:last-child{border-bottom:none}
+.hier-ch{
+font-size:var(–fs-sm);color:var(–txt-muted);
+padding:3px 0 3px 22px;
+display:flex;align-items:center;gap:6px;
+}
+.hier-ch-dot{width:5px;height:5px;border-radius:50%;background:var(–border);flex-shrink:0}
+
+/* Meta rows */
+.meta-row{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-bottom:1px solid var(–border-sub);font-size:var(–fs-base)}
+.meta-row:last-child{border-bottom:none}
+.meta-lbl{flex:0 0 80px;font-size:var(–fs-sm);color:var(–txt-muted);flex-shrink:0}
+.meta-val{flex:1;color:var(–txt-primary);font-weight:500}
+
+/* ── TOOLTIP ── */
+/* ── LEFT DRAWER (standard mode) ── */
+#left-drawer{
+display:none;position:absolute;top:0;left:0;bottom:0;width:var(–lp-w);
+background:var(–panel-bg);border-right:1px solid var(–border);
+box-shadow:4px 0 24px rgba(0,0,0,0.14);z-index:50;flex-direction:column;overflow:hidden;
+}
+#left-drawer.open{display:flex}
+#drawer-backdrop{
+display:none;position:absolute;inset:0;
+background:rgba(0,0,0,0.12);z-index:40;
+}
+#drawer-backdrop.open{display:block}
+
+/* ── RESPONSIVE ── */
+@container app (max-width:900px){
+#body-grid{grid-template-columns:1fr var(–rp-w)}
+#left-panel{display:none}
+#nav-drawer-btn{display:flex}
+}
+@container app (max-width:600px){
+#body-grid{grid-template-columns:var(–lp-w) 1fr}
+#right-panel{display:none}
+#nav-drawer-btn{display:flex}
+}
+
+@keyframes slideLeft{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+@keyframes slideRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
+#left-panel{animation:slideLeft 0.24s cubic-bezier(0.22,1,0.36,1) both}
+#right-panel{animation:slideRight 0.24s cubic-bezier(0.22,1,0.36,1) both}
+</style>
+
+</head>
+<body>
+<div class="webpart-host">
+<div class="app-shell">
+<div id="app-grid">
+
+  <!-- TOP BAR -->
+
+  <header id="top-bar">
+    <button id="nav-drawer-btn" aria-label="Tool list">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <line x1="1" y1="3"  x2="13" y2="3"  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="1" y1="7"  x2="13" y2="7"  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="1" y1="11" x2="13" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      Tools
+    </button>
+    <div id="brand">
+      <div id="brand-icon">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <circle cx="6.5" cy="6.5" r="5" stroke="white" stroke-width="1.3" fill="none"/>
+          <circle cx="6.5" cy="6.5" r="1.8" fill="white"/>
+        </svg>
+      </div>
+      CVD Central
+    </div>
+    <div id="tb-sep"></div>
+    <div id="tb-crumb">
+      <span>Fab Operations</span><span style="opacity:.4">›</span>
+      <span class="here">Floor Map</span>
+    </div>
+    <div id="tb-right">
+      <button id="btn-reset">Reset Map</button>
+    </div>
+  </header>
+
+  <!-- BODY GRID -->
+
+  <div id="body-grid">
+
+```
+<div id="drawer-backdrop"></div>
+
+<!-- LEFT PANEL -->
+<aside id="left-panel">
+  <div id="lp-controls">
+    <div id="lp-eyebrow">PCVD Tools</div>
+    <div id="search-wrap">
+      <span id="search-icon">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.3"/>
+          <line x1="8.5" y1="8.5" x2="11.5" y2="11.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <input id="search-input" type="text" placeholder="Search tool ID or chamber…" autocomplete="off"/>
+    </div>
+  </div>
+  <div id="lp-list-region">
+    <div id="lp-list-label">By location</div>
+    <div id="tool-list"></div>
+  </div>
+  <div id="lp-footer">
+    <div class="lp-li"><div class="lp-vbar prod"></div>Production</div>
+    <div class="lp-li"><div class="lp-vbar eng"></div>Engineering</div>
+  </div>
+</aside>
+
+<!-- Left drawer (standard mode) -->
+<div id="left-drawer">
+  <div style="padding:11px 13px 9px;border-bottom:1px solid var(--border-sub);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <span style="font-size:var(--fs-label);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--txt-muted)">PCVD Tools</span>
+    <button id="drawer-close-btn" style="background:none;border:none;font-size:20px;color:var(--txt-muted);cursor:pointer;padding:2px 6px">×</button>
+  </div>
+  <div style="padding:9px 13px 10px;border-bottom:1px solid var(--border-sub);flex-shrink:0">
+    <input id="drawer-search" type="text" placeholder="Search tools…" autocomplete="off"
+      style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:var(--fs-base);background:var(--bg);outline:none"/>
+  </div>
+  <div id="drawer-tool-list" style="flex:1;overflow-y:auto;padding-bottom:20px"></div>
+</div>
+
+<!-- MAP -->
+<div id="map-container">
+  <canvas id="cv"></canvas>
+</div>
+
+<!-- RIGHT PANEL -->
+<aside id="right-panel">
+
+  <!-- STATE A: No selection -->
+  <div class="rp-state active" id="rp-state-a">
+    <div id="rp-idle-body">
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <circle cx="26" cy="26" r="22" stroke="currentColor" stroke-width="1.4"/>
+        <circle cx="26" cy="26" r="10" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 3"/>
+        <circle cx="26" cy="26" r="3" fill="currentColor"/>
+      </svg>
+      <h3>No tool selected</h3>
+      <p>Select a tool from the map or list to view equipment details.</p>
+    </div>
+  </div>
+
+  <!-- STATE B: Tool selected -->
+  <div class="rp-state" id="rp-state-b">
+    <div id="rp-sel-hd">
+      <div class="rp-back" id="rp-sel-back">← Deselect</div>
+      <div class="rp-tool-id" id="rp-sel-id">—</div>
+      <div class="rp-tool-meta" id="rp-sel-meta">—</div>
+      <div id="rp-badge-wrap"></div>
+    </div>
+    <div class="rp-scroll" id="rp-b-scroll"></div>
+  </div>
+
+  <!-- STATE C: Chamber selected -->
+  <div class="rp-state" id="rp-state-c">
+    <div style="flex-shrink:0;padding:13px 15px 11px;border-bottom:1px solid var(--border-sub)">
+      <div class="rp-back" id="rp-ch-back">← Back to tool</div>
+      <div class="rp-tool-id" id="rp-ch-id">—</div>
+      <div style="font-size:var(--fs-sm);color:var(--txt-muted);margin-top:3px" id="rp-ch-sub">—</div>
+    </div>
+    <div class="rp-scroll" id="rp-c-scroll"></div>
+  </div>
+
+</aside>
+```
+
+  </div>
+</div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+'use strict';
+
+// ============================================================
+// ★ PRODUCTION EDIT POINT 1 — TOOL METADATA
+// ─────────────────────────────────────────────────────────────
+// chambers[] entries are ordered CLOCKWISE from 9 o'clock (slot 0).
+// Use null for any unused slot — that geometry will not be rendered.
+// Example: 3-chamber tool in a 4-slot profile → ['CH_A','CH_B','CH_C', null]
+// ============================================================
+const TOOL_META = {
+  'AAEV832200': {
+    workstation: 'WS-AAEV832200',
+    owners: [{ name: 'See area lead', email: '', phone: '' }],
+    frames: [{ label: 'MACH IV', chambers: ['AAEV832210', 'AAEV832220', 'AAEV832230', null] }],
+    chamberTypes: {
+      'AAEV832210': 'Process Chamber',
+      'AAEV832220': 'Process Chamber',
+      'AAEV832230': 'Process Chamber',
+    },
+    // chamberOwners: override the frame owner for specific chambers.
+    // Any chamber NOT listed here inherits the top-level owners array.
+    // chamberOwners: {
+    //   'AAEV832210': [{ name: 'First Last', email: 'name@co.com', phone: 'x1234' }],
+    //   'AAEV832220': [{ name: 'Other Person', email: 'other@co.com', phone: 'x5678' }],
+    // },
+  },
+
+  // ── vec demo: slot 0 (back/top arm) null — only left + right chambers installed ──
+  // slot 0 = back arm (top, above TM)  →  null = not installed
+  // slot 1 = left arm                  →  active
+  // slot 2 = right arm                 →  active
+  'PCVD-102': {
+    workstation: 'WS-PCVD-102',
+    owners: [{ name: 'See area lead', email: '', phone: '' }],
+    frames: [{ label: 'MACH IV', chambers: [null, 'PCVD-102-CH-L', 'PCVD-102-CH-R'] }],
+    chamberTypes: {
+      'PCVD-102-CH-L': 'Process Chamber',
+      'PCVD-102-CH-R': 'Process Chamber',
+    },
+  },
+};
+
+function getToolMeta(id) {
+  if (TOOL_META[id]) return TOOL_META[id];
+  return {
+    workstation: `WS-${id}`,
+    owners: [{ name: 'See area lead', email: '', phone: '' }],
+    frames: [{ label: 'MACH IV', chambers: [] }],
+  };
+}
+
+// ============================================================
+// SCENE DATA (v43 geometry — unchanged)
+// ============================================================
+const D = {
+  blds: [
+    { id: "B", lb: "Building B", x: -52, z: -44, w: 40, d: 34 },
+    { id: "A", lb: "Building A", x: -10, z: -44, w: 52, d: 34 },
+    { id: "C", lb: "Building C", x: -76, z:   4, w: 26, d: 22 },
+  ],
+  cor: { w: 1.5, s: { x: -51, z: 4 }, e: { x: -51, z: -10 } },
+  ph:  { x: -52, z: -28, w: 14, d: 16 },
+  rows: [
+    { id: "B-7",  b: "B", n: 7,  x: -30, zS: -42, zE: -12 },
+    { id: "B-8",  b: "B", n: 8,  x: -20, zS: -42, zE: -12 },
+    { id: "A-9",  b: "A", n: 9,  x:  -4, zS: -42, zE: -12 },
+    { id: "A-10", b: "A", n: 10, x:   6, zS: -42, zE: -12 },
+    { id: "A-11", b: "A", n: 11, x:  16, zS: -42, zE: -12 },
+    { id: "A-12", b: "A", n: 12, x:  26, zS: -42, zE: -12 },
+    { id: "A-13", b: "A", n: 13, x:  36, zS: -42, zE: -12 },
+    { id: "C-5",  b: "C", n: 5,  x: -70, zS:   6, zE:  24 },
+    { id: "C-6b", b: "C", n: 6,  x: -58, zS:  17, zE:  24 },
+  ],
+  rg: 4, to: 2,
+  wk: {
+    B: { cr: [{ z: -27, xS: -38, xE: -12 }] },
+    A: { cr: [{ z: -27, xS: -10, xE:  42 }] },
+    C: { cr: [{ z:  15, xS: -76, xE: -50 }] },
+  },
+  // ============================================================
+  // ★ PRODUCTION EDIT POINT 2 — MAP TOOL POSITIONS
+  // Change id to real equip_id. Do NOT change ri, s, or p.
+  // ============================================================
+  tools: [
+    { id: "AAEV832200",     v: "prod", ri: "B-7",  s: "left",  p: .15, toolShape: 'tri' },
+    { id: "PCVD-102",       v: "eng",  ri: "B-7",  s: "left",  p: .38, toolShape: 'vec' },
+    { id: "PCVD-103",       v: "prod", ri: "B-7",  s: "left",  p: .62, toolShape: 'alt' },
+    { id: "PCVD-107",       v: "prod", ri: "B-7",  s: "left",  p: .85, toolShape: 'epis' },
+    { id: "PCVD-108",       v: "eng",  ri: "A-9",  s: "left",  p: .09 },
+    { id: "PCVD-109",       v: "eng",  ri: "A-9",  s: "left",  p: .17 },
+    { id: "PCVD-111",       v: "eng",  ri: "A-10", s: "right", p: .15 },
+    { id: "PCVD-112",       v: "prod", ri: "A-10", s: "right", p: .74 },
+    { id: "PCVD-110",       v: "prod", ri: "A-10", s: "right", p: .64 },
+    { id: "PCVD-126",       v: "prod", ri: "A-10", s: "right", p: .84 },
+    { id: "PCVD-113",       v: "eng",  ri: "A-11", s: "left",  p: .59 },
+    { id: "PCVD-114",       v: "prod", ri: "A-11", s: "left",  p: .07 },
+    { id: "PCVD-115",       v: "eng",  ri: "A-11", s: "left",  p: .27 },
+    { id: "PCVD-127",       v: "eng",  ri: "A-11", s: "left",  p: .38 },
+    { id: "PCVD-116",       v: "prod", ri: "A-12", s: "right", p: .12 },
+    { id: "PCVD-118",       v: "prod", ri: "A-13", s: "left",  p: .84 },
+    { id: "PCVD-119",       v: "eng",  ri: "A-13", s: "right", p: .86 },
+    { id: "PCVD-119b",      v: "eng",  ri: "A-13", s: "right", p: .97 },
+    { id: "PCVD-120",       v: "prod", ri: "C-5",  s: "right", p: .12 },
+    { id: "PCVD-121",       v: "eng",  ri: "C-5",  s: "right", p: .30 },
+    { id: "PCVD-122",       v: "prod", ri: "C-5",  s: "right", p: .72 },
+    { id: "PCVD-123",       v: "eng",  ri: "C-5",  s: "right", p: .93 },
+    { id: "PCVD-124",       v: "prod", ri: "C-6b", s: "left",  p: .55 },
+    { id: "PCVD-125",       v: "eng",  ri: "C-6b", s: "right", p: .75 },
+  ],
+  ts: { w: 2.0, d: 1.6, h: 1.0 },
+  vn: { prod: "Production", eng: "Engineering" },
+};
+
+const BLDG_LABELS = { B: 'Bldg 29', A: 'Bldg 90', C: 'Bldg 19' };
+const HG = D.rg / 2;
+const TOOL_TYPE_COLORS = {
+  prod: { face: 0x1A6B35, top: 0x2E8B50, shadow: 0x0D3D1E },  // deep green
+  eng:  { face: 0x5C4A9E, top: 0x7B65C0, shadow: 0x362A6B },  // slate violet
+};
+const SEL_COLOR = new THREE.Color(0x0078D4);
+const WHITE     = new THREE.Color(0xffffff);
+
+// ============================================================
+// RENDERER
+// ============================================================
+const cvEl = document.getElementById('cv');
+const R = new THREE.WebGLRenderer({ canvas: cvEl, antialias: true });
+R.setPixelRatio(Math.min(devicePixelRatio, 2));
+R.setClearColor(0xEDEEF1);
+R.shadowMap.enabled = true;
+R.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const S = new THREE.Scene();
+S.fog = new THREE.FogExp2(0xEDEEF1, .003);
+
+const cam = new THREE.PerspectiveCamera(50, 1, 0.5, 500);
+S.add(new THREE.AmbientLight(0xffffff, .9));
+const dl = new THREE.DirectionalLight(0xffffff, .6);
+dl.position.set(20, 50, 30); dl.castShadow = true;
+dl.shadow.mapSize.set(1024, 1024);
+dl.shadow.camera.left = -100; dl.shadow.camera.right = 60;
+dl.shadow.camera.top  =   60; dl.shadow.camera.bottom = -40;
+S.add(dl);
+S.add(new THREE.HemisphereLight(0xc8d8f0, 0xffffff, .3));
+
+// ============================================================
+// GEOMETRY HELPERS (unchanged from v14)
+// ============================================================
+function fR(x,z,w,d,y,c,o){
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshBasicMaterial({color:c,opacity:o,transparent:o<1}));
+  m.rotation.x=-Math.PI/2;m.position.set(x+w/2,y,z+d/2);m.receiveShadow=true;return m;
+}
+function oR(x,z,w,d,y,c,o){
+  return new THREE.LineLoop(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(x,y,z),new THREE.Vector3(x+w,y,z),
+      new THREE.Vector3(x+w,y,z+d),new THREE.Vector3(x,y,z+d)
+    ]),
+    new THREE.LineBasicMaterial({color:c,opacity:o,transparent:o<1,depthWrite:false})
+  );
+}
+function ln(a,b,c,d,y,col,op){
+  return new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(a,y,b),new THREE.Vector3(c,y,d)]),
+    new THREE.LineBasicMaterial({color:col,opacity:op,transparent:op<1})
+  );
+}
+function mkRowLbl(text,x,z,flip){
+  const c=document.createElement('canvas');c.width=256;c.height=256;
+  const cx=c.getContext('2d');
+  cx.fillStyle='rgba(18,42,110,0.90)';
+  const r=28,m=8,s=240;
+  cx.beginPath();cx.moveTo(m+r,m);cx.lineTo(m+s-r,m);cx.quadraticCurveTo(m+s,m,m+s,m+r);
+  cx.lineTo(m+s,m+s-r);cx.quadraticCurveTo(m+s,m+s,m+s-r,m+s);cx.lineTo(m+r,m+s);
+  cx.quadraticCurveTo(m,m+s,m,m+s-r);cx.lineTo(m,m+r);cx.quadraticCurveTo(m,m,m+r,m);
+  cx.closePath();cx.fill();
+  cx.save();
+  if(flip){cx.translate(128,128);cx.rotate(Math.PI);cx.translate(-128,-128)}
+  cx.font='700 148px -apple-system,BlinkMacSystemFont,sans-serif';
+  cx.fillStyle='#ffffff';cx.textAlign='center';cx.textBaseline='middle';
+  cx.fillText(text,128,132);cx.restore();
+  const tex=new THREE.CanvasTexture(c);tex.minFilter=THREE.LinearFilter;
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(2.8,2.8),
+    new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,depthWrite:false}));
+  mesh.rotation.set(-Math.PI/2,0,0);mesh.position.set(x,0.1,z);mesh.renderOrder=5;
+  return mesh;
+}
+function mkBldgSprite(text){
+  const cw=280,ch=68,c=document.createElement('canvas');
+  c.width=cw;c.height=ch;
+  const cx=c.getContext('2d');
+  cx.fillStyle='rgba(18,42,110,0.84)';
+  const r=14;
+  cx.beginPath();cx.moveTo(r,2);cx.lineTo(cw-r,2);cx.quadraticCurveTo(cw,2,cw,2+r);
+  cx.lineTo(cw,ch-r);cx.quadraticCurveTo(cw,ch,cw-r,ch);
+  cx.lineTo(r,ch);cx.quadraticCurveTo(2,ch,2,ch-r);
+  cx.lineTo(2,2+r);cx.quadraticCurveTo(2,2,r,2);cx.closePath();cx.fill();
+  cx.font='700 48px -apple-system,BlinkMacSystemFont,sans-serif';
+  cx.fillStyle='#ffffff';cx.textAlign='center';cx.textBaseline='middle';
+  cx.fillText(text,cw/2,ch/2+1);
+  const tex=new THREE.CanvasTexture(c);tex.minFilter=THREE.LinearFilter;
+  const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,opacity:0.90,depthTest:false}));
+  spr.scale.set(7.0,7.0*(ch/cw),1);spr.renderOrder=6;
+  return spr;
+}
+
+// ── Floor system ──────────────────────────────────────────────
+const FLOOR_TILE=4.0, GFX_EDGE=-100, GFZ_TOP=45;
+function mkFloorTex(fill){
+  const sz=256,can=document.createElement('canvas');can.width=sz;can.height=sz;
+  const ctx=can.getContext('2d');
+  ctx.fillStyle=fill;ctx.fillRect(0,0,sz,sz);
+  ctx.strokeStyle='rgba(136,153,183,0.38)';ctx.lineWidth=3;ctx.strokeRect(1.5,1.5,sz-3,sz-3);
+  const tex=new THREE.CanvasTexture(can);
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+  tex.generateMipmaps=true;tex.minFilter=THREE.LinearMipmapLinearFilter;
+  tex.magFilter=THREE.LinearFilter;
+  tex.anisotropy=Math.min(4,R.capabilities.getMaxAnisotropy());
+  return tex;
+}
+function mkGlobalFloor(){
+  const fw=170,fd=110,cx=-15,cz=-10;
+  const tex=mkFloorTex('#EAEDF3');tex.repeat.set(fw/FLOOR_TILE,fd/FLOOR_TILE);tex.needsUpdate=true;
+  const mat=new THREE.MeshBasicMaterial({map:tex,transparent:false});
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(fw,fd),mat);
+  mesh.rotation.x=-Math.PI/2;mesh.position.set(cx,0.002,cz);return mesh;
+}
+function mkBldgFloor(bx,bz,bw,bd){
+  const tex=mkFloorTex('#F2F5FB').clone();
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(bw/FLOOR_TILE,bd/FLOOR_TILE);
+  tex.offset.set(((bx-GFX_EDGE)/FLOOR_TILE)%1,((GFZ_TOP-bz-bd)/FLOOR_TILE)%1);
+  tex.generateMipmaps=true;tex.minFilter=THREE.LinearMipmapLinearFilter;
+  tex.anisotropy=Math.min(4,R.capabilities.getMaxAnisotropy());tex.needsUpdate=true;
+  const mat=new THREE.MeshBasicMaterial({map:tex,transparent:false});
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(bw,bd),mat);
+  mesh.rotation.x=-Math.PI/2;mesh.position.set(bx+bw/2,0.005,bz+bd/2);return mesh;
+}
+function mkBayDiv(x,zS,zE){
+  const d=zE-zS,h=1.9;
+  const mat=new THREE.MeshBasicMaterial({color:0xB8D2EA,transparent:true,opacity:0.065,side:THREE.DoubleSide,depthWrite:false});
+  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(d,h),mat);
+  mesh.rotation.y=Math.PI/2;mesh.position.set(x,h/2,zS+d/2);mesh.renderOrder=2;S.add(mesh);
+}
+
+// ============================================================
+// BUILD SCENE
+// ============================================================
+const TM=[], TD=new Map(), RM=new Map();
+
+S.add(mkGlobalFloor());
+
+D.blds.forEach(b=>{
+  S.add(mkBldgFloor(b.x,b.z,b.w,b.d));
+  S.add(oR(b.x,b.z,b.w,b.d,.08,0x8A97AA,.90));
+  const bspr=mkBldgSprite(BLDG_LABELS[b.id]);
+  bspr.position.set(b.x+4.0,4.5,b.z+2.5);S.add(bspr);
+});
+
+const cs=D.cor.s,ce=D.cor.e,cL=Math.abs(ce.z-cs.z),cW=D.cor.w;
+{const cf=fR(cs.x-cW/2,ce.z,cW,cL,0.020,0xE4E9F0,0.65);cf.material.depthWrite=false;cf.renderOrder=2;S.add(cf);}
+S.add(ln(cs.x-cW/2,cs.z,ce.x-cW/2,ce.z,.09,0xB0BAC8,.70));
+S.add(ln(cs.x+cW/2,cs.z,ce.x+cW/2,ce.z,.09,0xB0BAC8,.70));
+
+const pa=D.ph;
+{const pf=fR(pa.x,pa.z,pa.w,pa.d,0.020,0xFBF0DF,0.82);pf.material.depthWrite=false;pf.renderOrder=2;S.add(pf);}
+S.add(oR(pa.x,pa.z,pa.w,pa.d,.09,0xC8965A,.75));
+{
+  const pc=document.createElement('canvas');pc.width=256;pc.height=80;
+  const px=pc.getContext('2d');
+  const pr=12,pw=252,ph=76;
+  px.fillStyle='rgba(196,138,58,0.88)';
+  px.beginPath();px.moveTo(pr,2);px.lineTo(pw-pr,2);px.quadraticCurveTo(pw,2,pw,2+pr);
+  px.lineTo(pw,ph-pr);px.quadraticCurveTo(pw,ph,pw-pr,ph);
+  px.lineTo(pr,ph);px.quadraticCurveTo(2,ph,2,ph-pr);px.lineTo(2,2+pr);px.quadraticCurveTo(2,2,pr,2);
+  px.closePath();px.fill();
+  px.font='700 46px -apple-system,BlinkMacSystemFont,sans-serif';
+  px.fillStyle='#ffffff';px.textAlign='center';px.textBaseline='middle';px.fillText('PHOTO',128,41);
+  const ptex=new THREE.CanvasTexture(pc);ptex.minFilter=THREE.LinearFilter;
+  const pl=new THREE.Sprite(new THREE.SpriteMaterial({map:ptex,transparent:true,opacity:0.92,depthTest:false}));
+  pl.scale.set(5.5,5.5*(80/256),1);pl.renderOrder=6;pl.position.set(pa.x+pa.w/2,2.2,pa.z+pa.d/2);S.add(pl);
+}
+
+const WF=0xE4E9F0,WE=0xC8D0DC;
+Object.values(D.wk).forEach(w=>{(w.cr||[]).forEach(c=>{const h=2;
+  const wf=fR(c.xS,c.z-h/2,c.xE-c.xS,h,0.020,WF,0.65);wf.material.depthWrite=false;wf.renderOrder=3;S.add(wf);
+  S.add(ln(c.xS,c.z-h/2,c.xE,c.z-h/2,.09,WE,.65));
+  S.add(ln(c.xS,c.z+h/2,c.xE,c.z+h/2,.09,WE,.65));
+})});
+
+const RC=0x4060a0;
+D.rows.forEach(r=>{
+  RM.set(r.id,r);const len=r.zE-r.zS;
+  const bf=fR(r.x-HG,r.zS,D.rg,len,0.024,WF,0.72);bf.material.depthWrite=false;bf.renderOrder=3;S.add(bf);
+  [ln(r.x-HG,r.zS,r.x-HG,r.zE,.06,RC,.65),ln(r.x+HG,r.zS,r.x+HG,r.zE,.06,RC,.65),
+   ln(r.x-HG,r.zS,r.x+HG,r.zS,.06,RC,.4), ln(r.x-HG,r.zE,r.x+HG,r.zE,.06,RC,.4)]
+    .forEach(l=>{l.renderOrder=4;S.add(l)});
+  S.add(mkRowLbl(String(r.n),r.x,r.zE-1.5,false));
+  if(len>7) S.add(mkRowLbl(String(r.n),r.x,r.zS+1.5,true));
+});
+
+mkBayDiv(-25,-42,-12);
+mkBayDiv(  1,-42,-12);
+mkBayDiv( 11,-42,-12);
+mkBayDiv( 21,-42,-12);
+mkBayDiv( 31,-42,-12);
+mkBayDiv(-64,  6, 24);
+
+// ── Tool meshes — cluster tool groups ────────────────────────────
+// Selection state
+const selectedMeshes = new Set();   // currently highlighted part meshes
+let   selGroup       = null;        // group owning rings + lift
+const toolGroups     = new Map();   // toolId → THREE.Group
+let   selChamberMesh  = null;       // chamber mesh currently lifted
+let   prevChamberMesh = null;       // chamber mesh currently returning to base
+const CHAMBER_LIFT    = 0.12;       // local-Y offset for selected chamber
+
+// mkToolMat kept for applyMats fallback (not used for cluster parts)
+function mkToolMat(vc, lerp){
+  const fc=new THREE.Color(vc.face).lerp(WHITE,lerp);
+  const tc=new THREE.Color(vc.top).lerp(WHITE,lerp);
+  const sc=new THREE.Color(vc.shadow).lerp(WHITE,lerp);
+  return [
+    new THREE.MeshStandardMaterial({color:fc,roughness:.4,metalness:.0}),
+    new THREE.MeshStandardMaterial({color:fc,roughness:.4,metalness:.0}),
+    new THREE.MeshStandardMaterial({color:tc,roughness:.3,metalness:.0}),
+    new THREE.MeshStandardMaterial({color:sc,roughness:.5,metalness:.0}),
+    new THREE.MeshStandardMaterial({color:fc,roughness:.4,metalness:.0}),
+    new THREE.MeshStandardMaterial({color:sc,roughness:.5,metalness:.0}),
+  ];
+}
+
+// mkPart — create one cluster part, register in TM + TD, attach to group
+function mkPart(geo, colorHex, roughness, group, vc, td, partType){
+  const mat = new THREE.MeshStandardMaterial({color:colorHex, roughness, metalness:0.0});
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = true;
+  mesh.userData.vc        = vc;
+  mesh.userData.baseColor = colorHex;
+  mesh.userData.groupRef  = group;
+  mesh.userData.partType  = partType;
+  TM.push(mesh);
+  TD.set(mesh, {...td, partType});
+  group.add(mesh);
+  return mesh;
+}
+
+// ── Tool shape profiles ─────────────────────────────────────────
+// Each receives (group, vc, td) and builds parts via mkPart.
+
+function buildAlt(group, vc, td, chs=[]){
+  // Transfer module: octagonal cylinder
+  mkPart(new THREE.CylinderGeometry(0.38,0.38,0.30,8),
+    vc.top, 0.30, group, vc, td, 'frame'
+  ).position.set(0, 0.64, -0.18);
+
+  // Lower frame body
+  mkPart(new THREE.BoxGeometry(1.10,0.22,0.46),
+    vc.face, 0.40, group, vc, td, 'frame'
+  ).position.set(0, 0.37, 0.03);
+
+  // Process chambers (4) — flush against TM sides; skip null slots
+  [[-0.62,0,0],[-0.40,0,-0.60],[0.40,0,-0.60],[0.62,0,0]].forEach((off,i)=>{
+    if(chs.length && chs[i] === null) return;
+    const baseY=0.64;
+    const ch=mkPart(new THREE.BoxGeometry(0.48,0.44,0.48),
+      vc.face, 0.40, group, vc, td, `chamber_${i}`
+    );
+    ch.position.set(off[0], baseY, -0.18+off[2]);
+    ch.userData.localBaseY=baseY;
+  });
+
+  // Load ports (3)
+  [-0.44,0,0.44].forEach(x=>{
+    mkPart(new THREE.BoxGeometry(0.36,0.24,0.26),
+      vc.shadow, 0.50, group, vc, td, 'frame'
+    ).position.set(x, 0.18, 0.46);
+  });
+}
+
+function buildTri(group, vc, td, chs=[]){
+  const tmX=0, tmY=0.70, tmZ=-0.15;
+
+  // Transfer module: hexagonal cylinder (flat-top)
+  mkPart(new THREE.CylinderGeometry(0.42,0.42,0.28,6),
+    vc.top, 0.28, group, vc, td, 'frame'
+  ).position.set(tmX, tmY, tmZ);
+
+  // Lower frame body — sits clearly below the chamber layer
+  mkPart(new THREE.BoxGeometry(1.20,0.20,0.50),
+    vc.face, 0.40, group, vc, td, 'frame'
+  ).position.set(0, 0.30, 0.05);
+
+  // 4 petal chambers: 9-11-1-3 o'clock (left, upper-left, upper-right, right)
+  const petalR=0.71;
+  [270,330,30,90].forEach((deg,i)=>{
+    if(chs.length && chs[i] === null) return;
+    const th=deg*Math.PI/180;
+    const ch=mkPart(new THREE.BoxGeometry(0.38,0.40,0.58),
+      vc.face, 0.40, group, vc, td, `chamber_${i}`
+    );
+    ch.position.set(tmX+petalR*Math.sin(th), tmY, tmZ-petalR*Math.cos(th));
+    ch.rotation.y=-th;
+    ch.userData.localBaseY=tmY;
+  });
+
+}
+
+function buildVec(group, vc, td, chs=[]){
+  const CY   = 0.55;    // shared Y center
+  const H    = 0.52;    // uniform height — taller
+  const S    = 0.68;    // square chamber side — bigger
+  const SP   = 0.68;    // spine = same size as chamber for visual match
+  const CC   = 0xD4900A;
+
+  // ── Central spine — short connector at cross center ──────
+  mkPart(new THREE.BoxGeometry(SP, H, SP),
+    vc.face, 0.40, group, vc, td, 'frame'
+  ).position.set(0, CY, 0);
+
+  // ── chamber_0: back arm, flush with spine back ────────────
+  if(!(chs.length && chs[0]===null)){
+    const ch0 = mkPart(new THREE.BoxGeometry(S, H, S), CC, 0.40, group, vc, td, 'chamber_0');
+    ch0.position.set(0, CY, -(SP/2 + S/2));
+    ch0.userData.localBaseY = CY;
+  }
+
+  // ── chamber_1: left arm, flush with spine left ────────────
+  if(!(chs.length && chs[1]===null)){
+    const ch1 = mkPart(new THREE.BoxGeometry(S, H, S), CC, 0.40, group, vc, td, 'chamber_1');
+    ch1.position.set(-(SP/2 + S/2), CY, 0);
+    ch1.userData.localBaseY = CY;
+  }
+
+  // ── chamber_2: right arm, mirror ──────────────────────────
+  if(!(chs.length && chs[2]===null)){
+    const ch2 = mkPart(new THREE.BoxGeometry(S, H, S), CC, 0.40, group, vc, td, 'chamber_2');
+    ch2.position.set(SP/2 + S/2, CY, 0);
+    ch2.userData.localBaseY = CY;
+  }
+
+  // ── Load ports (3) — front of spine ───────────────────────
+  [-0.26, 0, 0.26].forEach(x => {
+    mkPart(new THREE.BoxGeometry(0.24, 0.22, 0.20),
+      vc.face, 0.40, group, vc, td, 'frame')
+      .position.set(x, 0.22, SP/2 + 0.14);
+  });
+}
+
+function buildEpis(group, vc, td, chs=[]){
+  const CY   = 0.55;   // shared Y center
+  const H    = 0.46;   // uniform height
+  const FW   = 0.56;   // frame spine width
+  const FD   = 1.40;   // frame spine depth
+  const CH_W = 0.48;   // chamber width
+  const CH_D = 0.54;   // chamber depth
+  const GAP  = 0.04;   // gap between stacked chambers
+
+  const FX = 0;
+  const FZ = -(0.12);  // spine centered slightly back to leave room for load ports front
+
+  // ── Frame spine (thin center bar) ────────────────────────
+  mkPart(new THREE.BoxGeometry(FW, H, FD),
+    vc.face, 0.40, group, vc, td, 'frame'
+  ).position.set(FX, CY, FZ);
+
+  // ── Stacked chamber positions (shared Z values) ───────────
+  // upper chamber center Z: back face of spine + half CH_D
+  const upZ = FZ - FD/2 + CH_D/2;
+  // lower chamber center Z: upper front face + GAP + half CH_D
+  const loZ = upZ + CH_D/2 + GAP + CH_D/2;
+
+  // Left side chambers (–X from spine); skip if slot is null
+  const lX = FX - FW/2 - CH_W/2;
+  if(!(chs.length && chs[0]===null)){
+    const ch0 = mkPart(new THREE.BoxGeometry(CH_W, H, CH_D), vc.top, 0.35, group, vc, td, 'chamber_0');
+    ch0.position.set(lX, CY, upZ); ch0.userData.localBaseY = CY;
+  }
+  if(!(chs.length && chs[1]===null)){
+    const ch1 = mkPart(new THREE.BoxGeometry(CH_W, H, CH_D), vc.top, 0.35, group, vc, td, 'chamber_1');
+    ch1.position.set(lX, CY, loZ); ch1.userData.localBaseY = CY;
+  }
+
+  // Right side chambers (+X from spine)
+  const rX = FX + FW/2 + CH_W/2;
+  if(!(chs.length && chs[2]===null)){
+    const ch2 = mkPart(new THREE.BoxGeometry(CH_W, H, CH_D), vc.top, 0.35, group, vc, td, 'chamber_2');
+    ch2.position.set(rX, CY, upZ); ch2.userData.localBaseY = CY;
+  }
+  if(!(chs.length && chs[3]===null)){
+    const ch3 = mkPart(new THREE.BoxGeometry(CH_W, H, CH_D), vc.top, 0.35, group, vc, td, 'chamber_3');
+    ch3.position.set(rX, CY, loZ); ch3.userData.localBaseY = CY;
+  }
+
+  // ── Load port bar — wide, front of tool ──────────────────
+  mkPart(new THREE.BoxGeometry(FW + CH_W*2, 0.26, 0.28),
+    vc.face, 0.50, group, vc, td, 'frame'
+  ).position.set(FX, 0.22, FZ + FD/2 + 0.16);
+}
+
+D.tools.forEach(t=>{
+  const row=RM.get(t.ri); if(!row) return;
+  const tz=row.zS+t.p*(row.zE-row.zS);
+  const edgeOff=HG+D.ts.w/2+0.1;
+  const tx=row.x+(t.s==='left'?-edgeOff:edgeOff);
+  const vc=TOOL_TYPE_COLORS[t.v]||TOOL_TYPE_COLORS.prod;
+  const td={id:t.id,vendor:D.vn[t.v]||t.v,bld:row.b,row:row.n,side:t.s,v:t.v};
+
+  // Group — at floor level, rotated so load ports face the aisle
+  const group = new THREE.Group();
+  group.position.set(tx, 0, tz);
+  group.rotation.y = (t.s === 'left') ? Math.PI/2 : -Math.PI/2;
+  group.scale.setScalar(1.3);
+  group.userData.liftActive = false;
+  toolGroups.set(t.id, group);
+  S.add(group);
+
+  // Resolve chamber ID list for this tool (clockwise from slot 0)
+  const _meta = getToolMeta(t.id);
+  const chamberIds = _meta.frames[0]?.chambers || [];
+
+  // Dispatch to shape profile — lookup table, default alt
+  ({tri:buildTri, vec:buildVec, alt:buildAlt, epis:buildEpis}[t.toolShape] || buildAlt)(group, vc, td, chamberIds);
+});
+
+
+// ── Selection: bounding box + HUD label + leader ─────────────
+const _selBox3 = new THREE.Box3();
+// Box3Helper removed — AABB doesn't match rotated tool profiles
+
+// Leader line — two points: bottom (box top) → top (label base)
+const _leaderPts = new Float32Array(6);  // [x0,y0,z0, x1,y1,z1]
+const _leaderGeo = new THREE.BufferGeometry();
+_leaderGeo.setAttribute('position', new THREE.BufferAttribute(_leaderPts, 3));
+const selLeader = new THREE.Line(_leaderGeo,
+  new THREE.LineBasicMaterial({color:0x0078D4, transparent:true, opacity:0.55, depthTest:false}));
+selLeader.visible = false;
+selLeader.renderOrder = 12;
+S.add(selLeader);
+
+// HUD label — canvas sprite, redrawn on each new selection
+const _lblCanvas = document.createElement('canvas');
+_lblCanvas.width = 640; _lblCanvas.height = 128;
+const _lblTex = new THREE.CanvasTexture(_lblCanvas);
+_lblTex.minFilter = THREE.LinearFilter;
+const selLabelSprite = new THREE.Sprite(
+  new THREE.SpriteMaterial({map:_lblTex, transparent:true, depthTest:false})
+);
+selLabelSprite.renderOrder = 13;
+selLabelSprite.scale.set(5.5, 5.5*(128/640), 1);
+selLabelSprite.visible = false;
+S.add(selLabelSprite);
+
+function _drawSelLabel(text){
+  const c = _lblCanvas, ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const r=16, pad=24, h=c.height-10;
+  ctx.fillStyle='rgba(10,20,50,0.88)';
+  ctx.strokeStyle='rgba(0,120,212,0.9)';
+  ctx.lineWidth=3.5;
+  ctx.beginPath();
+  ctx.moveTo(pad+r,5); ctx.lineTo(c.width-pad-r,5);
+  ctx.quadraticCurveTo(c.width-pad,5,c.width-pad,5+r);
+  ctx.lineTo(c.width-pad,h-r);
+  ctx.quadraticCurveTo(c.width-pad,h,c.width-pad-r,h);
+  ctx.lineTo(pad+r,h);
+  ctx.quadraticCurveTo(pad,h,pad,h-r);
+  ctx.lineTo(pad,5+r);
+  ctx.quadraticCurveTo(pad,5,pad+r,5);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.font='700 48px -apple-system,BlinkMacSystemFont,sans-serif';
+  ctx.fillStyle='#ffffff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(text, c.width/2, c.height/2+1);
+  _lblTex.needsUpdate = true;
+}
+
+function _getSelLabelText(mesh, toolId){
+  const pt = mesh?.userData.partType || '';
+  if(pt.startsWith('chamber_')){
+    const idx = parseInt(pt.split('_')[1]);
+    const meta = getToolMeta(toolId);
+    const chId = meta.frames[0]?.chambers[idx] || null;
+    return chId || toolId;
+  }
+  return toolId;
+}
+
+// ============================================================
+// ORBIT CAMERA
+// ============================================================
+const HOME={tgt:new THREE.Vector3(-20,0,-8),phi:0.65,theta:1.45,r:105};
+const O={
+  tgt:HOME.tgt.clone(),phi:0.14,theta:HOME.theta,r:132,
+  minR:18,maxR:130,
+  drag:false,pan:false,lx:0,ly:0,
+  idle:0,idleD:12000,idleS:0.00008,
+  flyActive:false,flyT:0,flyDur:1400,
+  flyFrom:{tgt:null,phi:0,r:0,theta:0},
+  flyGoal:{tgt:null,phi:0.65,r:28,theta:HOME.theta},
+};
+
+function easeIOC(t){return t<.5?4*t*t*t:(t-1)*(2*t-2)*(2*t-2)+1}
+
+function flyToTool(mesh){
+  O.flyFrom={tgt:O.tgt.clone(),phi:O.phi,r:O.r,theta:O.theta};
+  O.flyGoal={tgt:new THREE.Vector3(mesh.position.x,0,mesh.position.z),phi:HOME.phi,r:28,theta:O.theta};
+  O.flyDur=620;O.flyT=0;O.flyActive=true;O.idle=0;
+  clearReturnHome();
+}
+
+let _returnTimer=null;
+function scheduleReturnHome(){
+  clearReturnHome();
+  _returnTimer=setTimeout(()=>{
+    _returnTimer=null;
+    O.flyFrom={tgt:O.tgt.clone(),phi:O.phi,r:O.r,theta:O.theta};
+    O.flyGoal={tgt:HOME.tgt.clone(),phi:HOME.phi,r:HOME.r,theta:HOME.theta};
+    O.flyDur=900;O.flyT=0;O.flyActive=true;
+  },15000);
+}
+function clearReturnHome(){if(_returnTimer){clearTimeout(_returnTimer);_returnTimer=null;}}
+
+function uc(){
+  cam.position.set(
+    O.tgt.x+O.r*Math.sin(O.phi)*Math.cos(O.theta),
+    O.tgt.y+O.r*Math.cos(O.phi),
+    O.tgt.z+O.r*Math.sin(O.phi)*Math.sin(O.theta)
+  );
+  cam.lookAt(O.tgt);
+}
+uc();
+
+// Startup reveal
+O.flyFrom={tgt:HOME.tgt.clone(),phi:0.14,r:155,theta:HOME.theta};
+O.flyGoal={tgt:HOME.tgt.clone(),phi:HOME.phi,r:HOME.r,theta:HOME.theta};
+O.flyT=0;O.flyActive=true;
+
+cvEl.addEventListener('mousedown',e=>{
+  if(e.button===0) O.pan=true;   // left drag = pan (Google Maps style)
+  if(e.button===2) O.drag=true;  // right drag = orbit/rotate
+  O.lx=e.clientX;O.ly=e.clientY;O.idle=0;
+  O.flyActive=false;clearReturnHome();
+});
+cvEl.addEventListener('mousemove',e=>{
+  const dx=e.clientX-O.lx,dy=e.clientY-O.ly;O.lx=e.clientX;O.ly=e.clientY;
+  // Orbit (right drag) — rotate camera angle
+  if(O.drag){O.theta-=dx*.007;O.phi=Math.max(.10,Math.min(1.25,O.phi-dy*.007));O.idle=0}
+  // Pan (left drag) — translate target in world XZ plane, speed scales with zoom distance
+  if(O.pan){
+    const s=O.r*.0018;
+    const rv=new THREE.Vector3(),up=new THREE.Vector3(0,1,0);
+    cam.getWorldDirection(rv);rv.cross(up).normalize();
+    const fv=new THREE.Vector3();fv.crossVectors(rv,up).normalize();
+    O.tgt.addScaledVector(rv,-dx*s);O.tgt.addScaledVector(fv,-dy*s);O.idle=0;
+  }
+});
+addEventListener('mouseup',()=>{O.drag=false;O.pan=false});
+cvEl.addEventListener('contextmenu',e=>e.preventDefault());
+cvEl.addEventListener('wheel',e=>{
+  e.preventDefault();O.flyActive=false;clearReturnHome();
+  O.r=Math.max(O.minR,Math.min(O.maxR,O.r+e.deltaY*.055));O.idle=0;
+},{passive:false});
+
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  O.flyFrom={tgt:O.tgt.clone(),phi:O.phi,r:O.r,theta:O.theta};
+  O.flyGoal={tgt:HOME.tgt.clone(),phi:HOME.phi,r:HOME.r,theta:HOME.theta};
+  O.flyDur=900;O.flyT=0;O.flyActive=true;O.idle=0;
+});
+
+// ============================================================
+// RAYCASTER
+// ============================================================
+const rc=new THREE.Raycaster(),mv=new THREE.Vector2();
+const hvMeshes=new Set();  // meshes currently showing hover tint
+
+function canvasNDC(cx,cy){
+  const rect=cvEl.getBoundingClientRect();
+  return{x:((cx-rect.left)/rect.width)*2-1,y:-((cy-rect.top)/rect.height)*2+1};
+}
+function applyMats(mesh, lerp, selected){
+  const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  if(selected){
+    mats.forEach(m => m.color.set(SEL_COLOR));
+  } else if(mesh.userData.baseColor !== undefined){
+    // Cluster part — restore from stored base color
+    const c = new THREE.Color(mesh.userData.baseColor).lerp(WHITE, lerp);
+    mats.forEach(m => m.color.copy(c));
+  } else {
+    // Legacy 6-face box (fallback)
+    const newMats = mkToolMat(mesh.userData.vc, lerp);
+    mats.forEach((m,i) => m.color.copy(newMats[i] ? newMats[i].color : newMats[0].color));
+    newMats.forEach(m => m.dispose());
+  }
+}
+
+cvEl.addEventListener('click',e=>{
+  const n=canvasNDC(e.clientX,e.clientY);mv.x=n.x;mv.y=n.y;
+  rc.setFromCamera(mv,cam);
+  const hits=rc.intersectObjects(TM);
+  if(hits.length){
+    const hitMesh=hits[0].object;
+    const d=TD.get(hitMesh);
+    if(d.partType && d.partType.startsWith('chamber_')){
+      // Chamber part clicked: resolve to real chamber ID and drill into state C
+      const chIdx=parseInt(d.partType.split('_')[1]);
+      const meta=getToolMeta(d.id);
+      const frame=meta.frames[0];
+      const chamberId=frame?.chambers[chIdx];
+      uiSelectedTool=d.id;   // pre-set so selectChamber skips its inner syncThreeSelection
+      syncThreeSelection(d.id, hitMesh);
+      if(chamberId){ selectChamber(d.id, frame.label, chamberId); }
+      else          { selectTool(d.id, d); }
+    } else {
+      // Frame part (TM, lower body, load port): highlight all frame parts as a unit
+      syncThreeSelection(d.id, null);
+      selectTool(d.id, d);
+    }
+  } else {
+    const wasSelected=uiSelectedTool!==null;
+    syncThreeSelection(null);
+    setRpState('a');
+    uiSelectedTool=null;
+    uiSelectedChamber=null;
+    renderLeftPanel();
+    if(wasSelected){
+      clearReturnHome();
+      O.flyFrom={tgt:O.tgt.clone(),phi:O.phi,r:O.r,theta:O.theta};
+      O.flyGoal={tgt:HOME.tgt.clone(),phi:HOME.phi,r:HOME.r,theta:HOME.theta};
+      O.flyDur=700;O.flyT=0;O.flyActive=true;
+    } else {
+      scheduleReturnHome();
+    }
+  }
+});
+
+cvEl.addEventListener('mousemove',e=>{
+  const n=canvasNDC(e.clientX,e.clientY);mv.x=n.x;mv.y=n.y;
+  rc.setFromCamera(mv,cam);
+  const hits=rc.intersectObjects(TM);
+  // Restore all previously hovered meshes that aren't selected
+  hvMeshes.forEach(m=>{ if(!selectedMeshes.has(m)) applyMats(m,0,false); });
+  hvMeshes.clear();
+  if(hits.length){
+    const hitMesh=hits[0].object;
+    const d=TD.get(hitMesh);
+    const isChamberHover=hitMesh.userData.partType?.startsWith('chamber_');
+    const toHover=isChamberHover
+      ? [hitMesh]
+      : TM.filter(m=>TD.get(m)?.id===d.id && TD.get(m)?.partType==='frame');
+    toHover.forEach(m=>{ if(!selectedMeshes.has(m)){ applyMats(m,.2,false); hvMeshes.add(m); } });
+  } else {
+  }
+});
+
+// ============================================================
+// RENDER LOOP
+// ============================================================
+let lt=performance.now();
+(function loop(now){
+  requestAnimationFrame(loop);
+  const dt=now-lt; lt=now;
+
+  if(O.flyActive){
+    O.flyT=Math.min(1,O.flyT+dt/O.flyDur);
+    const e=easeIOC(O.flyT);
+    O.tgt.lerpVectors(O.flyFrom.tgt,O.flyGoal.tgt,e);
+    O.phi=O.flyFrom.phi+(O.flyGoal.phi-O.flyFrom.phi)*e;
+    O.r  =O.flyFrom.r  +(O.flyGoal.r  -O.flyFrom.r  )*e;
+    let dTh=O.flyGoal.theta-O.flyFrom.theta;
+    while(dTh> Math.PI) dTh-=2*Math.PI;
+    while(dTh<-Math.PI) dTh+=2*Math.PI;
+    O.theta=O.flyFrom.theta+dTh*e;
+    if(O.flyT>=1) O.flyActive=false;
+  } else {
+    O.idle+=dt;
+    if(O.idle>O.idleD&&!O.drag&&!O.pan) O.theta+=O.idleS;
+  }
+
+  // Tool lift tween — operates on groups (all parts lift together)
+  const LIFT=0.20;
+  toolGroups.forEach(group=>{
+    const tY=group.userData.liftActive ? LIFT : 0;
+    const diff=tY-group.position.y;
+    if(Math.abs(diff)>0.001) group.position.y+=diff*Math.min(1,dt*0.009);
+  });
+  // Chamber lift tween — selected chamber rises above the group
+  if(selChamberMesh){
+    const diff=(selChamberMesh.userData.localBaseY+CHAMBER_LIFT)-selChamberMesh.position.y;
+    if(Math.abs(diff)>0.001) selChamberMesh.position.y+=diff*Math.min(1,dt*0.009);
+  }
+  // Previous chamber returns to its base Y
+  if(prevChamberMesh){
+    const diff=prevChamberMesh.userData.localBaseY-prevChamberMesh.position.y;
+    if(Math.abs(diff)>0.001) prevChamberMesh.position.y+=diff*Math.min(1,dt*0.009);
+    else prevChamberMesh=null;
+  }
+
+  // Selection bbox + HUD label + leader — update every frame to track lift tween
+  if(selectedMeshes.size > 0 && selGroup){
+    // Compute world bbox over all selected meshes
+    _selBox3.makeEmpty();
+    selectedMeshes.forEach(m=>{
+      m.updateWorldMatrix(true,false);
+      const b=new THREE.Box3().setFromObject(m);
+      _selBox3.union(b);
+    });
+
+    // Label position: above bbox center
+    const ctr = new THREE.Vector3();
+    _selBox3.getCenter(ctr);
+    const topY = _selBox3.max.y;
+    const lblY = topY + 3.2;
+    selLabelSprite.position.set(ctr.x, lblY, ctr.z);
+    selLabelSprite.visible = true;
+
+    // Leader: bottom point at bbox top, top point at label base
+    _leaderPts[0]=ctr.x; _leaderPts[1]=topY+0.08; _leaderPts[2]=ctr.z;
+    _leaderPts[3]=ctr.x; _leaderPts[4]=lblY-0.55;  _leaderPts[5]=ctr.z;
+    _leaderGeo.attributes.position.needsUpdate=true;
+    selLeader.visible=true;
+  } else {
+    selLabelSprite.visible=false;
+    selLeader.visible=false;
+  }
+
+  uc();
+  R.render(S,cam);
+})(performance.now());
+
+const mapContainer=document.getElementById('map-container');
+function updateCanvas(){
+  const w=mapContainer.offsetWidth,h=mapContainer.offsetHeight;
+  if(w<1||h<1) return;
+  R.setSize(w,h,true);cam.aspect=w/h;cam.updateProjectionMatrix();
+}
+new ResizeObserver(updateCanvas).observe(mapContainer);
+
+// ============================================================
+// UI STATE
+// ============================================================
+let uiSelectedTool = null;
+let uiSelectedChamber = null;   // { toolId, frame, chamber }
+let uiExpandedTools = new Set();
+let uiSearch = '';
+let uiDrawerSearch = '';
+
+function setRpState(state){
+  document.querySelectorAll('.rp-state').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`rp-state-${state}`).classList.add('active');
+}
+
+// ============================================================
+// RIGHT PANEL — frame selected
+// ============================================================
+function renderToolPanel(toolId, data){
+  const scroll = document.getElementById('rp-b-scroll');
+  const meta = getToolMeta(toolId);
+  const vc = { prod:'vb-prod', eng:'vb-eng' }[data.v] || 'vb-prod';
+  const frame = meta.frames[0];
+  const activeChambers = frame ? frame.chambers.filter(ch=>ch!==null) : [];
+
+  // Header
+  document.getElementById('rp-sel-id').textContent = toolId;
+  document.getElementById('rp-sel-meta').textContent =
+    `${BLDG_LABELS[data.bld]||data.bld}  ·  Row ${data.row}`;
+  document.getElementById('rp-badge-wrap').innerHTML =
+    `<div class="vendor-badge ${vc}">${D.vn[data.v]||data.v}</div>`;
+
+  // ── Frame info ────────────────────────────────────────────
+  const frameSection = `<div class="pane-sec">
+    <div class="pane-sec-hd">Frame</div>
+    <div class="meta-row">
+      <span class="meta-lbl">Frame type</span>
+      <span class="meta-val">${frame?.label || '—'}</span>
+    </div>
+    <div class="meta-row">
+      <span class="meta-lbl">Vendor</span>
+      <span class="meta-val">${D.vn[data.v]||data.v}</span>
+    </div>
+  </div>`;
+
+  // ── Workstation ───────────────────────────────────────────
+  const wsSection = `<div class="pane-sec">
+    <div class="pane-sec-hd">Workstation</div>
+    <div class="ws-block">
+      <div class="ws-icon">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <rect x="1" y="2" width="13" height="9" rx="1.5" stroke="#0078D4" stroke-width="1.2"/>
+          <line x1="5.5" y1="11" x2="5.5" y2="14" stroke="#0078D4" stroke-width="1.2"/>
+          <line x1="9.5" y1="11" x2="9.5" y2="14" stroke="#0078D4" stroke-width="1.2"/>
+          <line x1="3.5" y1="14" x2="11.5" y2="14" stroke="#0078D4" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="ws-lbl">Workstation ID</div>
+        <div class="ws-name">${meta.workstation}</div>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Equipment Owner ───────────────────────────────────────
+  const contactSection = `<div class="pane-sec">
+    <div class="pane-sec-hd">Equipment Owner</div>
+    ${meta.owners.map(o=>`
+      <div class="contact-row">
+        <div class="contact-ico">👤</div>
+        <div style="min-width:0">
+          <div class="contact-name">${o.name}</div>
+          <div class="contact-detail">
+            ${o.email ? `<a href="mailto:${o.email}">${o.email}</a>` : '—'}
+            ${o.phone ? ` · ${o.phone}` : ''}
+          </div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+
+  // ── Reference Links ───────────────────────────────────────
+  // ★ PRODUCTION EDIT POINT — add real hrefs per tool
+  const linksSection = `<div class="pane-sec">
+    <div class="pane-sec-hd">References</div>
+    <div class="link-list">
+      <a href="#" class="link-row" target="_blank" rel="noopener">
+        <div class="link-ico ico-sop">SOP</div>
+        <div class="link-body"><div class="link-title">PM Procedure</div></div>
+        <div class="link-chev">↗</div>
+      </a>
+      <a href="#" class="link-row" target="_blank" rel="noopener">
+        <div class="link-ico ico-jha">JHA</div>
+        <div class="link-body"><div class="link-title">Job Hazard Analysis</div></div>
+        <div class="link-chev">↗</div>
+      </a>
+      <a href="#" class="link-row" target="_blank" rel="noopener">
+        <div class="link-ico ico-ref">REF</div>
+        <div class="link-body"><div class="link-title">EIP / Drawings</div></div>
+        <div class="link-chev">↗</div>
+      </a>
+      <a href="#" class="link-row" target="_blank" rel="noopener">
+        <div class="link-ico ico-photo">IMG</div>
+        <div class="link-body"><div class="link-title">Tool Photos</div></div>
+        <div class="link-chev">↗</div>
+      </a>
+    </div>
+  </div>`;
+
+  scroll.innerHTML = frameSection + wsSection + contactSection + linksSection;
+}
+
+// ============================================================
+// LEFT PANEL
+// ============================================================
+function renderLeftPanel(){
+  const list = document.getElementById('tool-list');
+  const q = uiSearch.toLowerCase();
+
+  // Filter: match tool ID or any chamber name
+  let rows = D.tools.filter(t => {
+    const row = RM.get(t.ri); if(!row) return false;
+    if(!q) return true;
+    const idMatch = t.id.toLowerCase().includes(q);
+    const meta = getToolMeta(t.id);
+    const chamberMatch = meta.frames.some(f =>
+      f.chambers.some(ch => ch.toLowerCase().includes(q))
+    );
+    return idMatch || chamberMatch;
+  });
+
+  // Sort: building order (B→A→C) then row number then position
+  const bldOrd = { B:0, A:1, C:2 };
+  rows.sort((a,b) => {
+    const ra = RM.get(a.ri), rb = RM.get(b.ri);
+    const bo = (bldOrd[ra.b]??9) - (bldOrd[rb.b]??9);
+    if(bo!==0) return bo;
+    return (ra.n - rb.n) || (a.p - b.p);
+  });
+
+  if(!rows.length){
+    list.innerHTML = `<div style="padding:20px 13px;font-size:15px;color:var(--txt-muted);text-align:center">No tools match.</div>`;
+    return;
+  }
+
+  const html = rows.map(t => {
+    const row = RM.get(t.ri);
+    const isSel = t.id === uiSelectedTool;
+    const meta = getToolMeta(t.id);
+
+    // Auto-expand when search matches a chamber (not the tool ID itself)
+    const idMatch = !q || t.id.toLowerCase().includes(q);
+    const hasChamberMatch = q && !idMatch && meta.frames.some(f =>
+      f.chambers.some(ch => ch && ch.toLowerCase().includes(q))
+    );
+    const isExpanded = uiExpandedTools.has(t.id) || hasChamberMatch;
+
+    let accordion = '';
+    if(isExpanded){
+      const chamberRows = meta.frames.flatMap(f =>
+        f.chambers
+          .filter(ch => ch !== null && (idMatch || ch.toLowerCase().includes(q)))
+          .map(ch => {
+            const isCh = uiSelectedChamber && uiSelectedChamber.toolId===t.id && uiSelectedChamber.chamber===ch;
+            return `<div class="chamber-row${isCh?' sel':''}" data-tool="${t.id}" data-frame="${f.label}" data-chamber="${ch}">
+              <div class="ch-dot"></div>
+              <div class="ch-label">${ch}</div>
+            </div>`;
+          })
+      ).join('');
+      if(chamberRows) accordion = `<div class="tool-accordion open">${chamberRows}</div>`;
+    }
+
+    return `
+      <div class="tool-row${isSel?' sel':''}${isExpanded?' expanded':''}" data-id="${t.id}" data-v="${t.v}" data-bld="${row.b}" data-row="${row.n}" data-side="${t.s}">
+        <div class="t-vendor-bar ${t.v}"></div>
+        <div class="t-info">
+          <div class="t-id${isSel?' sel-id':''}">${t.id}</div>
+          <div class="t-loc">${BLDG_LABELS[row.b]||row.b} · Row ${row.n}</div>
+        </div>
+        <div class="t-chevron">›</div>
+      </div>
+      ${accordion}`;
+  }).join('');
+
+  list.innerHTML = html;
+
+  list.querySelectorAll('.tool-row').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      const data = {id, vendor:D.vn[el.dataset.v], bld:el.dataset.bld, row:el.dataset.row, side:el.dataset.side, v:el.dataset.v};
+      if(uiExpandedTools.has(id) && uiSelectedTool === id){
+        uiExpandedTools.delete(id);
+        renderLeftPanel();
+      } else {
+        syncThreeSelection(id);
+        selectTool(id, data);
+      }
+    });
+  });
+
+  // Chamber rows: drill into chamber detail state
+  list.querySelectorAll('.chamber-row').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      selectChamber(el.dataset.tool, el.dataset.frame, el.dataset.chamber);
+    });
+  });
+}
+
+// ============================================================
+// SELECTION
+// ============================================================
+function selectTool(id, data){
+  uiSelectedTool = id;
+  uiSelectedChamber = null;
+  uiExpandedTools.add(id);
+  renderLeftPanel();
+  renderToolPanel(id, data);
+  setRpState('b');
+
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`.tool-row[data-id="${id}"]`);
+    if(el) el.scrollIntoView({block:'nearest', behavior:'smooth'});
+  });
+}
+
+function selectChamber(toolId, frame, chamber){
+  // Find the specific chamber mesh matching this chamber ID
+  const meta = getToolMeta(toolId);
+  const chIdx = meta.frames[0]?.chambers.indexOf(chamber);
+  const chamberMesh = chIdx >= 0
+    ? TM.find(m => TD.get(m)?.id===toolId && m.userData.partType===`chamber_${chIdx}`)
+    : null;
+
+  // Fly to tool + highlight the specific chamber mesh (or all frame if not found)
+  if(uiSelectedTool !== toolId || chamberMesh){
+    syncThreeSelection(toolId, chamberMesh || null);
+  }
+  uiSelectedTool = toolId;
+  uiSelectedChamber = { toolId, frame, chamber };
+  uiExpandedTools.add(toolId);
+
+  // Populate state C header
+  document.getElementById('rp-ch-id').textContent = chamber;
+  document.getElementById('rp-ch-sub').textContent = '';
+  document.getElementById('rp-ch-back').textContent = `← ${toolId}`;
+
+  // Populate state C body
+  const scroll = document.getElementById('rp-c-scroll');
+  const chamberType = meta.chamberTypes?.[chamber] || '—';
+
+  // ── Chamber info ────────────────────────────────────────────
+  const chamberSection = `<div class="pane-sec">
+    <div class="pane-sec-hd">Chamber</div>
+    <div class="meta-row">
+      <span class="meta-lbl">Type</span>
+      <span class="meta-val">${chamberType}</span>
+    </div>
+    <div class="meta-row">
+      <span class="meta-lbl">Frame</span>
+      <span class="meta-val">${frame}</span>
+    </div>
+  </div>`;
+
+  // ── Workstation ─────────────────────────────────────────────
+  const wsSection = `<div class="pane-sec">
+    <div class="pane-sec-hd">Workstation</div>
+    <div class="ws-block">
+      <div class="ws-icon">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <rect x="1" y="2" width="13" height="9" rx="1.5" stroke="#0078D4" stroke-width="1.2"/>
+          <line x1="5.5" y1="11" x2="5.5" y2="14" stroke="#0078D4" stroke-width="1.2"/>
+          <line x1="9.5" y1="11" x2="9.5" y2="14" stroke="#0078D4" stroke-width="1.2"/>
+          <line x1="3.5" y1="14" x2="11.5" y2="14" stroke="#0078D4" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="ws-lbl">Workstation ID</div>
+        <div class="ws-name">${meta.workstation}</div>
+      </div>
+    </div>
+  </div>`;
+
+  // Resolve owner: chamber-specific if defined, else inherit from frame
+  const chamberSpecificOwners = meta.chamberOwners?.[chamber];
+  const resolvedOwners = chamberSpecificOwners || meta.owners;
+  const ownerLabel = chamberSpecificOwners ? 'Equipment Owner' : 'Equipment Owner <span style="font-size:var(--fs-xs);font-weight:400;color:var(--txt-muted);text-transform:none;letter-spacing:0">(frame)</span>';
+
+  // ── Equipment Owner ─────────────────────────────────────────
+  const contactSection = `<div class="pane-sec">
+    <div class="pane-sec-hd">${ownerLabel}</div>
+    ${resolvedOwners.map(o => `
+      <div class="contact-row">
+        <div class="contact-ico">👤</div>
+        <div style="min-width:0">
+          <div class="contact-name">${o.name}</div>
+          <div class="contact-detail">
+            ${o.email ? `<a href="mailto:${o.email}">${o.email}</a>` : '—'}
+            ${o.phone ? ` · ${o.phone}` : ''}
+          </div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+
+  // ── References ──────────────────────────────────────────────
+  const linksSection = `<div class="pane-sec">
+    <div class="pane-sec-hd">References</div>
+    <div class="link-list">
+      <a href="#" class="link-row" target="_blank" rel="noopener">
+        <div class="link-ico ico-sop">SOP</div>
+        <div class="link-body"><div class="link-title">PM Procedure</div></div>
+        <div class="link-chev">↗</div>
+      </a>
+      <a href="#" class="link-row" target="_blank" rel="noopener">
+        <div class="link-ico ico-jha">JHA</div>
+        <div class="link-body"><div class="link-title">Job Hazard Analysis</div></div>
+        <div class="link-chev">↗</div>
+      </a>
+      <a href="#" class="link-row" target="_blank" rel="noopener">
+        <div class="link-ico ico-ref">REF</div>
+        <div class="link-body"><div class="link-title">EIP / Drawings</div></div>
+        <div class="link-chev">↗</div>
+      </a>
+      <a href="#" class="link-row" target="_blank" rel="noopener">
+        <div class="link-ico ico-photo">IMG</div>
+        <div class="link-body"><div class="link-title">Chamber Photos</div></div>
+        <div class="link-chev">↗</div>
+      </a>
+    </div>
+  </div>`;
+
+  scroll.innerHTML = chamberSection + wsSection + contactSection + linksSection;
+
+  renderLeftPanel();
+  setRpState('c');
+}
+
+function syncThreeSelection(targetId, hitMesh=null){
+  // Return any previously lifted chamber to its base
+  if(selChamberMesh){ prevChamberMesh=selChamberMesh; selChamberMesh=null; }
+  // Restore all previously highlighted part meshes
+  selectedMeshes.forEach(m => applyMats(m, 0, false));
+  selectedMeshes.clear();
+  // Lower the previous group
+  if(selGroup){ selGroup.userData.liftActive=false; selGroup=null; }
+  if(!targetId) return;
+
+  const group=toolGroups.get(targetId);
+  if(!group) return;
+
+  // Highlight scope:
+  //   chamber hit  → only that mesh
+  //   frame hit OR panel/list select (no hitMesh) → all frame-typed parts of the tool
+  const isChamberClick = hitMesh && hitMesh.userData.partType?.startsWith('chamber_');
+  const toHL = isChamberClick
+    ? [hitMesh]
+    : TM.filter(m => TD.get(m)?.id===targetId && TD.get(m)?.partType==='frame');
+  toHL.forEach(m=>{ selectedMeshes.add(m); applyMats(m,0,true); });
+
+  // If a chamber part was hit, queue it for individual lift
+  if(hitMesh && hitMesh.userData.localBaseY !== undefined){
+    selChamberMesh=hitMesh;
+  }
+
+  // Draw HUD label for the primary selected mesh
+  const labelMesh = hitMesh || toHL[0] || null;
+  if(labelMesh) _drawSelLabel(_getSelLabelText(labelMesh, targetId));
+
+  selGroup=group;
+  selGroup.userData.liftActive=true;
+  flyToTool(group);
+}
+
+// Back / deselect (state B)
+document.getElementById('rp-sel-back').addEventListener('click', () => {
+  syncThreeSelection(null);
+  uiSelectedTool = null;
+  uiSelectedChamber = null;
+  uiExpandedTools.clear();
+  renderLeftPanel();
+  setRpState('a');
+  clearReturnHome();
+  O.flyFrom={tgt:O.tgt.clone(),phi:O.phi,r:O.r,theta:O.theta};
+  O.flyGoal={tgt:HOME.tgt.clone(),phi:HOME.phi,r:HOME.r,theta:HOME.theta};
+  O.flyDur=700;O.flyT=0;O.flyActive=true;
+});
+
+// Back to tool (state C)
+document.getElementById('rp-ch-back').addEventListener('click', () => {
+  if(!uiSelectedTool) { setRpState('a'); return; }
+  uiSelectedChamber = null;
+  const toolEntry = D.tools.find(t => t.id === uiSelectedTool);
+  if(toolEntry){
+    const row = RM.get(toolEntry.ri);
+    if(row){
+      const data = {id:uiSelectedTool, vendor:D.vn[toolEntry.v], bld:row.b, row:row.n, side:toolEntry.s, v:toolEntry.v};
+      renderToolPanel(uiSelectedTool, data);
+      renderLeftPanel();
+      setRpState('b');
+      return;
+    }
+  }
+  setRpState('a');
+});
+
+// Breadcrumb tool link in state C — also goes back to tool
+
+// ============================================================
+// SEARCH
+// ============================================================
+document.getElementById('search-input').addEventListener('input', e => {
+  uiSearch = e.target.value;
+  renderLeftPanel();
+});
+
+// ============================================================
+// DRAWER (standard mode)
+// ============================================================
+const drawer = document.getElementById('left-drawer');
+const backdrop = document.getElementById('drawer-backdrop');
+
+document.getElementById('nav-drawer-btn').addEventListener('click', () => {
+  drawer.classList.add('open'); backdrop.classList.add('open'); renderDrawerList();
+});
+document.getElementById('drawer-close-btn').addEventListener('click', () => {
+  drawer.classList.remove('open'); backdrop.classList.remove('open');
+});
+backdrop.addEventListener('click', () => {
+  drawer.classList.remove('open'); backdrop.classList.remove('open');
+});
+document.getElementById('drawer-search').addEventListener('input', e => {
+  uiDrawerSearch = e.target.value; renderDrawerList();
+});
+
+function renderDrawerList(){
+  const q = uiDrawerSearch.toLowerCase();
+  const drawerList = document.getElementById('drawer-tool-list');
+  let html = '';
+  D.tools.forEach(t => {
+    if(q && !t.id.toLowerCase().includes(q)) return;
+    const row = RM.get(t.ri); if(!row) return;
+    const isSel = t.id === uiSelectedTool;
+    html += `<div class="tool-row${isSel?' sel':''}" data-id="${t.id}" data-v="${t.v}" data-bld="${row.b}" data-row="${row.n}" data-side="${t.s}">
+      <div class="t-vendor-bar ${t.v}"></div>
+      <div class="t-info">
+        <div class="t-id${isSel?' sel-id':''}">${t.id}</div>
+        <div class="t-loc">${BLDG_LABELS[row.b]||row.b} · Row ${row.n}</div>
+      </div>
+    </div>`;
+  });
+  if(!html) html = `<div style="padding:20px 13px;font-size:15px;color:var(--txt-muted)">No tools match.</div>`;
+  drawerList.innerHTML = html;
+  drawerList.querySelectorAll('.tool-row').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      const data = {id, vendor:D.vn[el.dataset.v], bld:el.dataset.bld, row:el.dataset.row, side:el.dataset.side, v:el.dataset.v};
+      syncThreeSelection(id); selectTool(id, data);
+      drawer.classList.remove('open'); backdrop.classList.remove('open');
+    });
+  });
+}
+
+// ============================================================
+// INITIAL RENDER
+// ============================================================
+renderLeftPanel();
+</script>
+
+</body>
+</html>
